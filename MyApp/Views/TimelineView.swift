@@ -5,7 +5,6 @@ struct TimelineView: View {
 
     @State private var showingAdd = false
     @State private var editingTask: TaskItem?
-    @State private var dragOffsets: [UUID: CGFloat] = [:]
     
     // Theme colors matching inspiration
     let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
@@ -18,12 +17,10 @@ struct TimelineView: View {
                 // 1. Header & Calendar Scroller
                 VStack(spacing: 16) {
                     HStack(alignment: .bottom, spacing: 6) {
-                        // "1 March"
                         Text(vm.selectedDate.formatted(.dateTime.day().month(.wide)))
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(.white)
                         
-                        // "2026"
                         Text(vm.selectedDate.formatted(.dateTime.year()))
                             .font(.system(size: 28, weight: .bold))
                             .foregroundColor(themePink)
@@ -72,25 +69,21 @@ struct TimelineView: View {
                                 .offset(x: vm.timeColumnWidth + 10 + 22 - 0.75)
                                 
                                 // C. Floating Current Time Label
-                                // Shows the exact minute (e.g. "14:36") and slides down the screen
                                 if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
                                     let currentY = vm.yPosition(for: vm.currentTime)
                                     
-                                    // Format the current time to string (e.g., "2:36 PM" or "14:36")
                                     Text(vm.currentTime.formatted(date: .omitted, time: .shortened))
                                         .font(.caption2.weight(.bold))
                                         .foregroundColor(.white)
                                         .frame(width: vm.timeColumnWidth, alignment: .trailing)
-                                        // Offset visually centers the text on the exact Y coordinate
                                         .offset(y: currentY - 7)
                                         .animation(.linear(duration: 1.0), value: currentY)
                                 }
                                 
-                                // D. Task Blocks
+                                // D. Task Blocks (Dragging completely removed)
                                 ForEach(vm.tasks) { task in
                                     let taskHeight = vm.height(for: task)
                                     let yPos = vm.yPosition(for: task.startTime)
-                                    let dragOffset = dragOffsets[task.id] ?? 0
                                     
                                     HStack {
                                         Spacer().frame(width: vm.timeColumnWidth + 10)
@@ -101,30 +94,16 @@ struct TimelineView: View {
                                             onToggleComplete: { vm.toggleCompletion(for: task) }
                                         )
                                     }
-                                    .offset(y: yPos + dragOffset)
-                                    .gesture(
-                                        DragGesture()
-                                            .onChanged { value in
-                                                dragOffsets[task.id] = value.translation.height
-                                            }
-                                            .onEnded { value in
-                                                vm.reschedule(task: task, byDragYOffset: value.translation.height)
-                                                dragOffsets[task.id] = nil
-                                            }
-                                    )
+                                    .offset(y: yPos) // No more drag offset calculation!
                                 }
                             }
                             .frame(height: vm.timelineHeight() + 100, alignment: .top) // extra padding at bottom
                             .padding(.vertical, 20)
                         }
-                        .background(darkBackground) // Dark timeline canvas
-                        
-                        // Scroll to current time on load
+                        .background(darkBackground)
                         .onAppear {
                             scrollToCurrentHour(using: scrollProxy)
                         }
-                        
-                        // Scroll to current time if user taps today's date
                         .onChange(of: vm.selectedDate) {
                             scrollToCurrentHour(using: scrollProxy)
                         }
@@ -145,7 +124,7 @@ struct TimelineView: View {
                 }
             }
             .background(darkerBackground.ignoresSafeArea())
-            .preferredColorScheme(.dark) // FORCE DARK MODE
+            .preferredColorScheme(.dark)
         }
         .sheet(isPresented: $showingAdd) {
             AddEditTaskView(viewModel: vm)
