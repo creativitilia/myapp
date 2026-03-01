@@ -127,7 +127,8 @@ final class DayScheduleViewModel: ObservableObject {
     
     private func sortAndPersist() {
         allTasks.sort(by: { $0.startTime < $1.startTime })
-        store.save(allTasks)
+        // FIX: Added the 'tasks:' argument label here
+        store.save(tasks: allTasks)
     }
 
     // MARK: - Layout Helpers
