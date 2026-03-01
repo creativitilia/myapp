@@ -51,16 +51,13 @@ struct TimelineView: View {
                         ScrollView(.vertical, showsIndicators: false) {
                             ZStack(alignment: .topLeading) {
                                 
-                                // THE FIX:
-                                // We lay down a VStack of invisible blocks that exactly match the height of each hour.
-                                // Because they are physical blocks inside a VStack, ScrollViewReader finds them instantly.
-                                VStack(spacing: 0) {
-                                    ForEach(0..<24, id: \.self) { hour in
-                                        Color.clear
-                                            // 60 minutes * pixelsPerMinute = height of one hour
-                                            .frame(height: 60 * vm.pixelsPerMinute)
-                                            .id(hour) // ID is simply the integer hour (e.g., 14)
-                                    }
+                                // INVISIBLE HOUR ANCHORS
+                                // Placing an anchor exactly at the top of every hour
+                                ForEach(0..<25, id: \.self) { hour in
+                                    Color.clear
+                                        .frame(width: 1, height: 1)
+                                        .offset(y: CGFloat(hour * 60) * vm.pixelsPerMinute)
+                                        .id(hour)
                                 }
                                 
                                 // A. Time Labels (Far left)
@@ -123,34 +120,20 @@ struct TimelineView: View {
                                     )
                                 }
                             }
-                            .frame(height: vm.timelineHeight() + 100, alignment: .top) // extra padding at bottom
+                            .frame(height: vm.timelineHeight() + 100) // extra padding at bottom
                             .padding(.vertical, 20)
                         }
                         .background(darkBackground) // Dark timeline canvas
+                        
+                        // Scroll to current time on load
                         .onAppear {
-                            // Automatically scroll down to the current hour block
-                            let currentHour = Calendar.current.component(.hour, from: Date())
-                            
-                            // 0.2 second delay gives SwiftUI enough time to measure the VStack
-                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.2) {
-                                if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
-                                    withAnimation(.easeOut(duration: 0.6)) {
-                                        // Scroll precisely to the integer ID (e.g. 14 for 2:00 PM)
-                                        scrollProxy.scrollTo(currentHour, anchor: .center)
-                                    }
-                                }
-                            }
+                            scrollToCurrentHour(using: scrollProxy)
                         }
-                        // Re-trigger scroll if the user taps "Today" on the calendar header
-                        .onChange(of: vm.selectedDate) { _ in
-                            if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
-                                let currentHour = Calendar.current.component(.hour, from: Date())
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
-                                    withAnimation(.easeOut(duration: 0.6)) {
-                                        scrollProxy.scrollTo(currentHour, anchor: .center)
-                                    }
-                                }
-                            }
+                        
+                        // Scroll to current time if user taps today's date
+                        // Uses the updated iOS 17 onChange syntax (zero parameter closure)
+                        .onChange(of: vm.selectedDate) {
+                            scrollToCurrentHour(using: scrollProxy)
                         }
                     } // End ScrollViewReader
                     
@@ -164,8 +147,7 @@ struct TimelineView: View {
                             .clipShape(Circle())
                             .shadow(color: themePink.opacity(0.4), radius: 8, x: 0, y: 4)
                     }
-                    .padding(.trailing, 20)
-                    .padding(.bottom, 30)
+                    .padding()
                 }
             }
             .background(darkerBackground.ignoresSafeArea())
@@ -176,6 +158,21 @@ struct TimelineView: View {
         }
         .sheet(item: $editingTask) { task in
             AddEditTaskView(viewModel: vm, taskToEdit: task)
+        }
+    }
+    
+    // Helper function to handle the scrolling logic
+    private func scrollToCurrentHour(using proxy: ScrollViewProxy) {
+        if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
+            let currentHour = vm.calendar.component(.hour, from: vm.currentTime)
+            
+            // Give the view a moment to calculate its bounds before jumping
+            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                withAnimation(.easeOut(duration: 0.6)) {
+                    // Centers the screen exactly on the current hour (e.g. 14 for 2:00 PM)
+                    proxy.scrollTo(currentHour, anchor: .center)
+                }
+            }
         }
     }
 }
