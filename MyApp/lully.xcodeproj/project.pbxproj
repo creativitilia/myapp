@@ -8,6 +8,14 @@
 
 /* Begin PBXFileReference section */
 		758596512F542E480001F05D /* lully.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = lully.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		7585966D2F54359B0001F05D /* TaskItem.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskItem.swift; sourceTree = "<group>"; };
+		7585966E2F5435A30001F05D /* TaskStore.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskStore.swift; sourceTree = "<group>"; };
+		7585966F2F5435B10001F05D /* DayScheduleViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayScheduleViewModel.swift; sourceTree = "<group>"; };
+		758596702F5435BD0001F05D /* TimeColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeColumnView.swift; sourceTree = "<group>"; };
+		758596712F5435D00001F05D /* TaskBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskBlockView.swift; sourceTree = "<group>"; };
+		758596722F5435D90001F05D /* AddEditTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditTaskView.swift; sourceTree = "<group>"; };
+		758596732F5435E50001F05D /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		758596742F54361E0001F05D /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -32,6 +40,10 @@
 		758596482F542E480001F05D = {
 			isa = PBXGroup;
 			children = (
+				7585966C2F54358B0001F05D /* Persistence */,
+				7585966B2F5435860001F05D /* Views */,
+				7585966A2F5435800001F05D /* ViewModels */,
+				758596692F5435770001F05D /* Models */,
 				758596532F542E480001F05D /* lully */,
 				758596522F542E480001F05D /* Products */,
 			);
@@ -43,6 +55,42 @@
 				758596512F542E480001F05D /* lully.app */,
 			);
 			name = Products;
+			sourceTree = "<group>";
+		};
+		758596692F5435770001F05D /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				758596742F54361E0001F05D /* Color+Hex.swift */,
+				7585966D2F54359B0001F05D /* TaskItem.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		7585966A2F5435800001F05D /* ViewModels */ = {
+			isa = PBXGroup;
+			children = (
+				7585966F2F5435B10001F05D /* DayScheduleViewModel.swift */,
+			);
+			path = ViewModels;
+			sourceTree = "<group>";
+		};
+		7585966B2F5435860001F05D /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				758596732F5435E50001F05D /* TimelineView.swift */,
+				758596722F5435D90001F05D /* AddEditTaskView.swift */,
+				758596712F5435D00001F05D /* TaskBlockView.swift */,
+				758596702F5435BD0001F05D /* TimeColumnView.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		7585966C2F54358B0001F05D /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				7585966E2F5435A30001F05D /* TaskStore.swift */,
+			);
+			path = Persistence;
 			sourceTree = "<group>";
 		};
 /* End PBXGroup section */
