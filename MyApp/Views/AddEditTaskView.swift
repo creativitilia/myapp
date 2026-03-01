@@ -218,18 +218,18 @@ struct AddEditTaskView: View {
             .background(primaryBackground)
         }
         .onAppear {
-                    if let task = taskToEdit {
-                        title = task.title
-                        startTime = task.startTime
-                        durationMinutes = task.durationMinutes
-                        colorHex = task.colorHex
-                        icon = task.icon ?? "checklist"
-                        isCompleted = task.isCompleted
-                        notes = task.notes ?? "" // <-- Add ?? "" right here
-                        repeatFreq = task.repeatFrequency
-                        step = 3 // Jump to confirmation for existing tasks
-                    }
-                }
+            if let task = taskToEdit {
+                title = task.title
+                startTime = task.startTime
+                durationMinutes = task.durationMinutes
+                colorHex = task.colorHex
+                icon = task.icon ?? "checklist"
+                isCompleted = task.isCompleted
+                notes = task.notes ?? ""
+                repeatFreq = task.repeatFrequency
+                step = 3 // Jump to confirmation for existing tasks
+            }
+        }
     }
 }
 
