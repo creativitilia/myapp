@@ -22,8 +22,8 @@ struct AddEditTaskView: View {
     @State private var title: String = ""
     @State private var startTime: Date = Date()
     @State private var durationMinutes: Double = 60
-    @State private var notes: String = ""
     @State private var repeatFreq: RepeatFrequency = .none
+    @State private var isCompleted: Bool = false
     
     // UI States
     @State private var colorHex: String = "#BA68C8" // Default to Purple like your screenshot
@@ -38,13 +38,8 @@ struct AddEditTaskView: View {
     private let durations: [Double] = [5, 15, 30, 45, 60, 90, 120, 180]
     
     // Adapts intelligently to Light/Dark mode
-    var primaryBackground: Color {
-        Color(UIColor.systemBackground)
-    }
-    
-    var cardBackground: Color {
-        Color(UIColor.secondarySystemBackground)
-    }
+    var primaryBackground: Color { Color(UIColor.systemBackground) }
+    var cardBackground: Color { Color(UIColor.secondarySystemBackground) }
     
     // Dynamic property that converts the hex string to a SwiftUI Color safely
     var themeColor: Color {
@@ -117,7 +112,8 @@ struct AddEditTaskView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         if step > 1 {
-                            Text("\(startTime.formatted(date: .omitted, time: .shortened))")
+                            let endTime = startTime.addingTimeInterval(durationMinutes * 60)
+                            Text("\(startTime.formatted(date: .omitted, time: .shortened)) - \(endTime.formatted(date: .omitted, time: .shortened)) (\(formatDuration(durationMinutes)))")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.8))
                         }
@@ -139,7 +135,24 @@ struct AddEditTaskView: View {
                             .frame(height: 1)
                     }
                     
-                    if step == 2 {
+                    Spacer()
+                    
+                    // Task Completion Toggle (Only in step 3, positioned on the right)
+                    if step == 3 {
+                        Button(action: { withAnimation { isCompleted.toggle() } }) {
+                            Circle()
+                                .stroke(Color.white, lineWidth: 2)
+                                .background(Circle().fill(isCompleted ? Color.white : Color.clear))
+                                .frame(width: 28, height: 28)
+                                .overlay(
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundColor(themeColor)
+                                        .opacity(isCompleted ? 1 : 0)
+                                )
+                        }
+                        .padding(.top, 16) // Push down slightly to align with title text
+                    } else if step == 2 {
                         Circle()
                             .stroke(Color.white, lineWidth: 2)
                             .frame(width: 24, height: 24)
@@ -203,7 +216,7 @@ struct AddEditTaskView: View {
                 durationMinutes = task.durationMinutes
                 colorHex = task.colorHex
                 icon = task.icon ?? "checklist"
-                notes = task.notes ?? ""
+                isCompleted = task.isCompleted
                 repeatFreq = task.repeatFrequency
                 step = 3 // Jump to confirmation for existing tasks
             }
@@ -235,7 +248,7 @@ extension AddEditTaskView {
                 .stroke(Color.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
             }
             
-            ZStack {
+            ZStack(alignment: .center) { // Ensure contents are perfectly centered
                 if step == 3 {
                     Capsule()
                         .fill(Color(white: 0.25))
@@ -248,10 +261,10 @@ extension AddEditTaskView {
                         .overlay(Circle().stroke(Color.white, lineWidth: 3))
                 }
                 
+                // NO offset applied, always sits right in the dead center!
                 Image(systemName: icon)
                     .font(.title)
                     .foregroundColor(themeColor)
-                    .offset(y: step == 3 ? -15 : 0)
             }
             
             if step == 3 {
@@ -462,39 +475,6 @@ extension AddEditTaskView {
                 .background(cardBackground)
                 .cornerRadius(16)
                 
-                // Notes Block
-                VStack(alignment: .leading, spacing: 0) {
-                    HStack {
-                        Image(systemName: "square")
-                            .font(.system(size: 20))
-                            .foregroundColor(.secondary)
-                        Text("Add Subtask")
-                            .foregroundColor(.secondary)
-                        Spacer()
-                    }
-                    .padding()
-                    
-                    Divider().background(Color.secondary.opacity(0.3))
-                    
-                    ZStack(alignment: .topLeading) {
-                        if notes.isEmpty {
-                            Text("Add notes, meeting links or phone numbers...")
-                                .foregroundColor(.secondary.opacity(0.5))
-                                .padding(.horizontal, 16)
-                                .padding(.top, 16)
-                        }
-                        TextEditor(text: $notes)
-                            .scrollContentBackground(.hidden)
-                            .background(Color.clear)
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(minHeight: 120)
-                    }
-                }
-                .background(cardBackground)
-                .cornerRadius(16)
-                
                 // Delete Button
                 if taskToEdit != nil {
                     Button(action: {
@@ -517,7 +497,7 @@ extension AddEditTaskView {
                 }
             }
             .padding(24)
-            .padding(.bottom, 60) // Extra padding to scroll past the footer button
+            .padding(.bottom, 60)
         }
     }
     
@@ -530,8 +510,8 @@ extension AddEditTaskView {
             duration: durationMinutes * 60,
             colorHex: colorHex,
             icon: icon,
-            isCompleted: taskToEdit?.isCompleted ?? false,
-            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : notes,
+            isCompleted: isCompleted,
+            notes: nil,
             repeatFrequency: repeatFreq
         )
         

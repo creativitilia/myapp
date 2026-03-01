@@ -19,11 +19,11 @@ struct TaskBlockView: View {
                     .fill(task.color.opacity(task.isCompleted ? 0.3 : 0.8))
                     .frame(width: pillWidth, height: max(height, pillWidth))
                 
-                // The icon, perfectly centered at the very top of the capsule
+                // The icon, perfectly centered horizontally AND vertically inside the visual "top circle" of the pill.
                 Image(systemName: task.isCompleted ? "checkmark" : (task.icon ?? "doc.text.fill"))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(task.isCompleted ? task.color : .white)
-                    .frame(width: pillWidth, height: pillWidth) // Keep it constrained to the top square area
+                    .frame(width: pillWidth, height: pillWidth)
             }
             // Add a white stroke around the whole pill to match the "Structured" app aesthetic
             .overlay(
