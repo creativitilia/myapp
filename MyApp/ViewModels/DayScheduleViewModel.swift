@@ -36,6 +36,11 @@ final class DayScheduleViewModel: ObservableObject {
         allTasks.filter { calendar.isDate($0.startTime, inSameDayAs: selectedDate) }
     }
 
+    // NEW: Helper to get tasks for any specific date
+    func tasksFor(date: Date) -> [TaskItem] {
+        allTasks.filter { calendar.isDate($0.startTime, inSameDayAs: date) }
+    }
+
     // MARK: - CRUD
     func addTask(_ task: TaskItem) {
         allTasks.append(task)

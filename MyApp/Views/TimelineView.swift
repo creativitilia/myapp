@@ -6,31 +6,43 @@ struct TimelineView: View {
     @State private var showingAdd = false
     @State private var editingTask: TaskItem?
     @State private var dragOffsets: [UUID: CGFloat] = [:]
+    
+    // Theme colors matching inspiration
+    let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
+    let darkerBackground = Color(red: 0.05, green: 0.05, blue: 0.06)
+    let themePink = Color(red: 1.0, green: 0.54, blue: 0.54) // Coral pink
 
     var body: some View {
         NavigationStack {
             VStack(spacing: 0) {
                 // 1. Header & Calendar Scroller
-                VStack(spacing: 12) {
-                    HStack {
-                        Text(vm.selectedDate.formatted(.dateTime.month(.wide).year()))
-                            .font(.title2.weight(.bold))
+                VStack(spacing: 16) {
+                    HStack(alignment: .bottom, spacing: 6) {
+                        // "1 March"
+                        Text(vm.selectedDate.formatted(.dateTime.day().month(.wide)))
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(.white)
+                        
+                        // "2026"
+                        Text(vm.selectedDate.formatted(.dateTime.year()))
+                            .font(.system(size: 28, weight: .bold))
+                            .foregroundColor(themePink)
+                        
+                        Image(systemName: "chevron.right")
+                            .font(.system(size: 20, weight: .bold))
+                            .foregroundColor(themePink)
+                            .padding(.bottom, 4)
+                            
                         Spacer()
-                        Image(systemName: "calendar")
-                            .foregroundColor(.secondary)
-                        Image(systemName: "gearshape")
-                            .foregroundColor(.secondary)
-                            .padding(.leading, 12)
                     }
                     .padding(.horizontal)
+                    .padding(.top, 10)
                     
-                    HorizontalCalendarView(selectedDate: $vm.selectedDate)
+                    HorizontalCalendarView(selectedDate: $vm.selectedDate, vm: vm)
                 }
-                .padding(.top, 10)
                 .padding(.bottom, 15)
-                .background(Color(UIColor.systemBackground))
-                .shadow(color: .black.opacity(0.05), radius: 5, y: 3)
-                .zIndex(1) // Keep shadow above timeline
+                .background(darkerBackground) // Very dark top header
+                .zIndex(1)
                 
                 // 2. Timeline Canvas
                 ZStack(alignment: .bottomTrailing) {
@@ -58,11 +70,11 @@ struct TimelineView: View {
                                         .frame(width: vm.timeColumnWidth + 10 + 22 - 4)
                                     
                                     Circle()
-                                        .fill(Color.red)
+                                        .fill(themePink)
                                         .frame(width: 8, height: 8)
                                     
                                     Rectangle()
-                                        .fill(Color.red)
+                                        .fill(themePink)
                                         .frame(height: 1.5)
                                         .padding(.leading, -2) // Overlap the dot slightly
                                 }
@@ -94,41 +106,37 @@ struct TimelineView: View {
                                             dragOffsets[task.id] = value.translation.height
                                         }
                                         .onEnded { value in
-                                            withAnimation(.spring()) { dragOffsets[task.id] = 0 }
                                             vm.reschedule(task: task, byDragYOffset: value.translation.height)
+                                            dragOffsets[task.id] = nil
                                         }
                                 )
-                                .animation(.spring(response: 0.3, dampingFraction: 0.85), value: vm.tasks)
                             }
                         }
-                        .frame(maxWidth: .infinity, alignment: .leading)
-                        .frame(height: vm.timelineHeight() + 100) // Padding at bottom
-                        .padding(.top, 20)
+                        .padding(.vertical, 20)
                     }
+                    .background(darkBackground) // Dark timeline canvas
                     
-                    // 3. Floating Add Button
-                    Button {
-                        showingAdd = true
-                    } label: {
+                    // Add Button Floating
+                    Button(action: { showingAdd = true }) {
                         Image(systemName: "plus")
-                            .font(.title.weight(.semibold))
-                            .foregroundStyle(.white)
+                            .font(.title2.weight(.bold))
+                            .foregroundColor(.white)
                             .frame(width: 60, height: 60)
-                            // The salmon pink matching version 2.0
-                            .background(Color(hex: "#FF8C8C") ?? Color.pink)
+                            .background(themePink)
                             .clipShape(Circle())
-                            .shadow(color: Color(hex: "#FF8C8C")?.opacity(0.4) ?? .clear, radius: 8, y: 4)
+                            .shadow(color: themePink.opacity(0.4), radius: 8, x: 0, y: 4)
                     }
-                    .padding(24)
+                    .padding()
                 }
             }
-            .navigationBarHidden(true) // Hide default nav bar to use custom one
-            .sheet(isPresented: $showingAdd) {
-                AddEditTaskView(viewModel: vm, taskToEdit: nil)
-            }
-            .sheet(item: $editingTask) { task in
-                AddEditTaskView(viewModel: vm, taskToEdit: task)
-            }
+            .background(darkerBackground.ignoresSafeArea())
+            .preferredColorScheme(.dark) // FORCE DARK MODE FOR THE WHOLE APP
+        }
+        .sheet(isPresented: $showingAdd) {
+            AddEditTaskView(viewModel: vm)
+        }
+        .sheet(item: $editingTask) { task in
+            AddEditTaskView(viewModel: vm, taskToEdit: task)
         }
     }
 }
