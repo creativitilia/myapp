@@ -6,33 +6,28 @@ struct TaskBlockView: View {
     let onTap: () -> Void
     let onToggleComplete: () -> Void
     
+    // Minimum height for a task block to remain tappable/readable
+    let minHeight: CGFloat = 50
+    
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             
-            // 1. Icon & Duration Tail (Centered on the background line)
-            ZStack(alignment: .top) {
-                // Duration Capsule Tail
-                if height > 44 {
-                    Capsule()
-                        .fill(task.color.opacity(task.isCompleted ? 0.3 : 0.8))
-                        .frame(width: 14, height: height)
-                } else {
-                    Circle()
-                        .fill(task.color.opacity(task.isCompleted ? 0.3 : 0.8))
-                        .frame(width: 44, height: 44)
-                }
+            // 1. Unified Capsule (The Pill)
+            ZStack {
+                Capsule()
+                    .fill(task.isCompleted ? task.color.opacity(0.3) : task.color)
+                    .frame(width: 44, height: max(height, minHeight))
                 
-                // Head Circle with Icon
-                Circle()
-                    .fill(task.isCompleted ? task.color.opacity(0.5) : task.color)
-                    .frame(width: 44, height: 44)
-                    .overlay(
-                        Image(systemName: task.isCompleted ? "checkmark" : (task.icon ?? "doc.text.fill"))
-                            .font(.system(size: 18, weight: .bold))
-                            .foregroundColor(.white)
-                    )
+                // Keep the icon pinned to the top of the capsule
+                VStack {
+                    Image(systemName: task.isCompleted ? "checkmark" : (task.icon ?? "doc.text.fill"))
+                        .font(.system(size: 18, weight: .bold))
+                        .foregroundColor(.white)
+                        .frame(width: 44, height: 44) // Gives the icon a fixed square area at the top
+                    Spacer(minLength: 0)
+                }
             }
-            .frame(width: 44)
+            .frame(width: 44, height: max(height, minHeight))
             
             // 2. Text Content
             VStack(alignment: .leading, spacing: 4) {
@@ -50,11 +45,11 @@ struct TaskBlockView: View {
                     .foregroundColor(task.isCompleted ? .gray : .primary)
                     .strikethrough(task.isCompleted)
             }
-            .padding(.top, 4)
+            .padding(.top, 12) // Push text down slightly to align with the icon
             
             Spacer(minLength: 0)
             
-            // 3. Completion Checkbox (Right side)
+            // 3. Completion Checkbox
             Button(action: onToggleComplete) {
                 Circle()
                     .strokeBorder(task.isCompleted ? task.color : Color.gray.opacity(0.3), lineWidth: 2)
@@ -67,11 +62,11 @@ struct TaskBlockView: View {
                             .opacity(task.isCompleted ? 1 : 0)
                     )
             }
-            .padding(.top, 8)
+            .padding(.top, 12) // Align checkbox with text
             .padding(.trailing, 16)
         }
-        .frame(height: max(height, 44), alignment: .top)
-        .contentShape(Rectangle()) // Makes the whole row tappable/draggable
+        .frame(height: max(height, minHeight), alignment: .top)
+        .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
     }
 }

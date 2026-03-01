@@ -1,5 +1,14 @@
 import SwiftUI
 
+// Struct to hold predefined task suggestions
+struct TaskSuggestion: Identifiable {
+    let id = UUID()
+    let title: String
+    let icon: String
+    let colorHex: String
+    let durationMinutes: Double
+}
+
 struct AddEditTaskView: View {
     @Environment(\.dismiss) private var dismiss
     @ObservedObject var viewModel: DayScheduleViewModel
@@ -13,43 +22,62 @@ struct AddEditTaskView: View {
     @State private var startTime: Date = Date()
     @State private var durationMinutes: Double = 60
     
-    // FIX: Store the actual Color object in state instead of calculating hex constantly
-    @State private var themeColor: Color = Color(red: 0.9, green: 0.45, blue: 0.45)
-    @State private var icon: String = "figure.run"
+    // FIX: Store Hex directly to prevent crash when saving
+    @State private var colorHex: String = "#E57373"
+    @State private var icon: String = "checklist" // Default icon
     
     // UI States
     @State private var showingColorPicker = false
     
-    // Use raw Colors instead of Hex strings for the preset picker
-    private let presetColors: [Color] = [
-        Color(red: 0.9, green: 0.45, blue: 0.45), // Salmon Red
-        Color(red: 0.5, green: 0.78, blue: 0.52), // Green
-        Color(red: 0.39, green: 0.71, blue: 0.96), // Blue
-        Color(red: 0.31, green: 0.76, blue: 0.97), // Light Blue
-        Color(red: 0.47, green: 0.53, blue: 0.8),  // Indigo
-        Color(red: 0.73, green: 0.41, blue: 0.78), // Purple
-        Color(red: 0.94, green: 0.38, blue: 0.57), // Pink
-        Color(red: 1.0, green: 0.72, blue: 0.3),   // Orange
-        Color(red: 1.0, green: 0.54, blue: 0.4)    // Deep Orange
+    private let presetColors: [String] = [
+        "#E57373", "#81C784", "#64B5F6", "#4FC3F7", "#7986CB",
+        "#BA68C8", "#F06292", "#FFB74D", "#FF8A65"
     ]
     
     private let durations: [Double] = [5, 15, 30, 45, 60, 90, 120, 180]
     let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.11)
+    
+    // Dynamic property that converts the hex string to a SwiftUI Color safely
+    var themeColor: Color {
+        Color(hex: colorHex) ?? Color(red: 0.9, green: 0.45, blue: 0.45)
+    }
+    
+    // Hardcoded suggestions database
+    let allSuggestions: [TaskSuggestion] = [
+        TaskSuggestion(title: "Answer Emails", icon: "envelope.fill", colorHex: "#E57373", durationMinutes: 15),
+        TaskSuggestion(title: "Watch a Movie", icon: "tv.fill", colorHex: "#64B5F6", durationMinutes: 120),
+        TaskSuggestion(title: "Go for a Run!", icon: "figure.run", colorHex: "#81C784", durationMinutes: 60),
+        TaskSuggestion(title: "Go Shopping", icon: "cart.fill", colorHex: "#FFB74D", durationMinutes: 60),
+        TaskSuggestion(title: "Read a Book", icon: "book.fill", colorHex: "#BA68C8", durationMinutes: 45),
+        TaskSuggestion(title: "Yoga Workout", icon: "figure.yoga", colorHex: "#4FC3F7", durationMinutes: 30)
+    ]
+    
+    // Dynamically filter suggestions based on what the user types
+    var filteredSuggestions: [TaskSuggestion] {
+        if title.isEmpty { return allSuggestions }
+        return allSuggestions.filter { $0.title.lowercased().contains(title.lowercased()) }
+    }
 
     var body: some View {
         VStack(spacing: 0) {
             // MARK: - TWO TONE HEADER
             VStack(alignment: .leading, spacing: 0) {
-                // Top Bar (Cancel)
+                // Top Bar (Cancel or Back)
                 HStack {
-                    Button(action: { dismiss() }) {
-                        Text("Cancel")
-                            .font(.subheadline)
-                            .foregroundColor(.white)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 6)
-                            .background(Color.black.opacity(0.3))
-                            .clipShape(Capsule())
+                    Button(action: handleBackButton) {
+                        HStack(spacing: 4) {
+                            if step > 1 {
+                                Image(systemName: "chevron.left")
+                                    .font(.subheadline.weight(.bold))
+                            }
+                            Text(step > 1 ? "Back" : "Cancel")
+                                .font(.subheadline)
+                        }
+                        .foregroundColor(.white)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 6)
+                        .background(Color.black.opacity(0.3))
+                        .clipShape(Capsule())
                     }
                     Spacer()
                 }
@@ -74,6 +102,15 @@ struct AddEditTaskView: View {
                             .font(.title2.weight(.bold))
                             .foregroundColor(.white)
                             .tint(.white)
+                            .onChange(of: title) { newValue in
+                                // If they type a known suggestion, automatically update the icon
+                                if let exactMatch = allSuggestions.first(where: { $0.title.lowercased() == newValue.lowercased() }) {
+                                    icon = exactMatch.icon
+                                    colorHex = exactMatch.colorHex
+                                } else {
+                                    icon = "checklist" // Default custom icon
+                                }
+                            }
                         
                         Rectangle()
                             .fill(Color.white.opacity(0.5))
@@ -101,13 +138,13 @@ struct AddEditTaskView: View {
                 Group {
                     if step == 1 {
                         step1Body
-                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                            .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
                     } else if step == 2 {
                         step2Body
                             .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
                     } else {
                         step3Body
-                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
+                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
                     }
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: step)
@@ -142,9 +179,8 @@ struct AddEditTaskView: View {
                 title = task.title
                 startTime = task.startTime
                 durationMinutes = task.durationMinutes
-                // FIX: Initialize the color safely
-                themeColor = Color(hex: task.colorHex) ?? Color(red: 0.9, green: 0.45, blue: 0.45)
-                icon = task.icon ?? "circle.fill"
+                colorHex = task.colorHex
+                icon = task.icon ?? "checklist"
                 step = 3 // Jump to confirmation for existing tasks
             }
         }
@@ -153,6 +189,22 @@ struct AddEditTaskView: View {
 
 // MARK: - Subviews & Steps
 extension AddEditTaskView {
+    
+    // Go Back Logic
+    private func handleBackButton() {
+        if step > 1 {
+            withAnimation {
+                // If editing an existing task, "Back" acts as Cancel, otherwise just step backward
+                if taskToEdit != nil {
+                    dismiss()
+                } else {
+                    step -= 1
+                }
+            }
+        } else {
+            dismiss()
+        }
+    }
     
     // HEADER ICON ANIMATION
     @ViewBuilder
@@ -208,29 +260,34 @@ extension AddEditTaskView {
     var step1Body: some View {
         ScrollView {
             VStack(spacing: 24) {
-                // Dummy data matching screenshot
-                suggestionRow(icon: "envelope.fill", title: "Answer Emails", time: "10:00 - 10:15 (15 min)")
-                suggestionRow(icon: "tv.fill", title: "Watch a Movie", time: "20:00 - 21:30 (1 hr, 30 min)")
-                suggestionRow(icon: "figure.run", title: "Go for a Run!", time: "12:00 - 13:00 (1 hr)")
-                suggestionRow(icon: "cart.fill", title: "Go Shopping", time: "17:00 - 18:00 (1 hr)")
+                if filteredSuggestions.isEmpty {
+                    Text("No matching suggestions. A custom task will be created.")
+                        .font(.caption)
+                        .foregroundColor(.gray)
+                        .padding(.top, 40)
+                } else {
+                    ForEach(filteredSuggestions) { suggestion in
+                        suggestionRow(suggestion: suggestion)
+                    }
+                }
             }
             .padding(.top, 30)
             .padding(.horizontal, 24)
         }
     }
     
-    func suggestionRow(icon: String, title: String, time: String) -> some View {
+    func suggestionRow(suggestion: TaskSuggestion) -> some View {
         HStack(spacing: 16) {
-            Image(systemName: icon)
+            Image(systemName: suggestion.icon)
                 .font(.title2)
-                .foregroundColor(themeColor)
+                .foregroundColor(Color(hex: suggestion.colorHex) ?? themeColor)
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text(time)
+                Text("\(formatDuration(suggestion.durationMinutes)) duration")
                     .font(.caption)
                     .foregroundColor(.gray)
-                Text(title)
+                Text(suggestion.title)
                     .font(.headline)
                     .foregroundColor(.white)
                 
@@ -239,8 +296,10 @@ extension AddEditTaskView {
         }
         .contentShape(Rectangle())
         .onTapGesture {
-            self.title = title
-            self.icon = icon
+            self.title = suggestion.title
+            self.icon = suggestion.icon
+            self.colorHex = suggestion.colorHex
+            self.durationMinutes = suggestion.durationMinutes
             step = 2
         }
     }
@@ -326,14 +385,14 @@ extension AddEditTaskView {
             if showingColorPicker {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 15) {
-                        ForEach(presetColors, id: \.self) { color in
+                        ForEach(presetColors, id: \.self) { hex in
                             Circle()
-                                .fill(color)
+                                .fill(Color(hex: hex) ?? .white)
                                 .frame(width: 36, height: 36)
-                                .overlay(Circle().stroke(Color.white, lineWidth: themeColor == color ? 3 : 0))
+                                .overlay(Circle().stroke(Color.white, lineWidth: colorHex == hex ? 3 : 0))
                                 .onTapGesture {
                                     withAnimation {
-                                        themeColor = color
+                                        colorHex = hex
                                         showingColorPicker = false
                                     }
                                 }
@@ -399,15 +458,12 @@ extension AddEditTaskView {
     
     // MARK: - Helpers
     private func saveTask() {
-        // Convert the current UI color back to a hex string for saving
-        let hexString = themeColor.toHex() ?? "#E57373"
-        
         let task = TaskItem(
             id: taskToEdit?.id ?? UUID(),
             title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Task" : title,
             startTime: startTime,
             duration: durationMinutes * 60,
-            colorHex: hexString,
+            colorHex: colorHex, // Safe, guaranteed to exist
             icon: icon,
             isCompleted: taskToEdit?.isCompleted ?? false
         )
