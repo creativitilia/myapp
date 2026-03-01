@@ -125,11 +125,21 @@ struct AddEditTaskView: View {
                                 .foregroundColor(.white.opacity(0.8))
                         }
                         
-                        TextField("Task Title", text: $title)
-                            .font(.title2.weight(.bold))
-                            .foregroundColor(.white)
-                            .accentColor(.white)
-                            .minimumScaleFactor(0.8)
+                        // Using an overlay with strikethrough if completed
+                        ZStack(alignment: .leading) {
+                            TextField("Task Title", text: $title)
+                                .font(.title2.weight(.bold))
+                                .foregroundColor(isCompleted ? .white.opacity(0.6) : .white)
+                                .accentColor(.white)
+                                .minimumScaleFactor(0.8)
+                            
+                            if isCompleted {
+                                Rectangle()
+                                    .fill(Color.white.opacity(0.6))
+                                    .frame(height: 2)
+                                    .padding(.trailing, 8)
+                            }
+                        }
                         
                         // Bottom underline
                         Rectangle()
@@ -139,9 +149,25 @@ struct AddEditTaskView: View {
                     
                     if step == 3 {
                         Spacer()
-                        Circle()
-                            .strokeBorder(Color.white, lineWidth: 2)
-                            .frame(width: 28, height: 28)
+                        // Tappable checkmark circle
+                        Button(action: {
+                            withAnimation(.spring(response: 0.3, dampingFraction: 0.6)) {
+                                isCompleted.toggle()
+                            }
+                        }) {
+                            ZStack {
+                                Circle()
+                                    .strokeBorder(Color.white, lineWidth: 2)
+                                    .background(Circle().fill(isCompleted ? Color.white : Color.clear))
+                                    .frame(width: 28, height: 28)
+                                
+                                if isCompleted {
+                                    Image(systemName: "checkmark")
+                                        .font(.system(size: 14, weight: .bold))
+                                        .foregroundColor(themeColor)
+                                }
+                            }
+                        }
                     }
                 }
                 .padding(.horizontal, 24)
@@ -248,13 +274,13 @@ extension AddEditTaskView {
                         .frame(width: 64, height: 64)
                 }
                 
-                Image(systemName: icon)
+                Image(systemName: isCompleted ? "checkmark" : icon)
                     .font(.title)
-                    .foregroundColor(step == 3 ? themeColor : .white)
+                    .foregroundColor(step == 3 ? (isCompleted ? .gray : themeColor) : .white)
             }
             
             // Sub-icon circle
-            if step == 3 {
+            if step == 3 && !isCompleted {
                 Circle()
                     .fill(cardBackground)
                     .frame(width: 24, height: 24)
