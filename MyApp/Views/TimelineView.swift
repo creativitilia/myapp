@@ -51,12 +51,14 @@ struct TimelineView: View {
                         ScrollView(.vertical, showsIndicators: false) {
                             ZStack(alignment: .topLeading) {
                                 
-                                // INVISIBLE ANCHOR FOR SCROLLING
-                                // We put this exactly at the Y position of the current time
-                                Color.clear
-                                    .frame(width: 1, height: 1)
-                                    .offset(y: vm.yPosition(for: vm.currentTime))
-                                    .id("CurrentTimeAnchor")
+                                // INVISIBLE HOUR ANCHORS
+                                // We place an anchor at the exact pixel position of every hour
+                                ForEach(0..<25, id: \.self) { hour in
+                                    Color.clear
+                                        .frame(width: 1, height: 1)
+                                        .offset(y: CGFloat(hour * 60) * vm.pixelsPerMinute)
+                                        .id("HourAnchor_\(hour)")
+                                }
                                 
                                 // A. Time Labels (Far left)
                                 TimeColumnView(vm: vm)
@@ -123,11 +125,15 @@ struct TimelineView: View {
                         }
                         .background(darkBackground) // Dark timeline canvas
                         .onAppear {
-                            // This ensures the layout is fully rendered before scrolling
+                            // Extract the current hour (e.g., 14 for 2:00 PM)
+                            let currentHour = Calendar.current.component(.hour, from: vm.currentTime)
+                            
+                            // Delay slightly so ScrollView geometry is fully mapped before jumping
                             DispatchQueue.main.asyncAfter(deadline: .now() + 0.1) {
                                 if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
                                     withAnimation(.easeOut(duration: 0.5)) {
-                                        scrollProxy.scrollTo("CurrentTimeAnchor", anchor: .center)
+                                        // Scroll directly to the current hour anchor, centering it
+                                        scrollProxy.scrollTo("HourAnchor_\(currentHour)", anchor: .center)
                                     }
                                 }
                             }
