@@ -113,8 +113,9 @@ struct AddEditTaskView: View {
                 Spacer()
                 
                 // Icon & Title Area
-                HStack(alignment: .bottom, spacing: 16) {
+                HStack(alignment: .center, spacing: 16) {
                     headerIcon
+                        .frame(width: 64) // Prevent the background dotted line path from squeezing the text
                     
                     VStack(alignment: .leading, spacing: 4) {
                         if step > 1 {
@@ -124,46 +125,23 @@ struct AddEditTaskView: View {
                                 .foregroundColor(.white.opacity(0.8))
                         }
                         
-                        TextField("", text: $title, prompt: Text("Task Title").foregroundColor(.white.opacity(0.5)))
+                        TextField("Task Title", text: $title)
                             .font(.title2.weight(.bold))
                             .foregroundColor(.white)
-                            .tint(.white)
-                            .onChange(of: title) { _, newValue in
-                                if step == 1 {
-                                    if !filteredSuggestions.contains(where: { $0.title.lowercased() == newValue.lowercased() }) {
-                                        icon = "checkmark.circle.fill"
-                                    }
-                                }
-                            }
+                            .accentColor(.white)
+                            .minimumScaleFactor(0.8)
                         
+                        // Bottom underline
                         Rectangle()
                             .fill(Color.white.opacity(0.5))
                             .frame(height: 1)
                     }
-                    // Add padding to bottom so the text field matches the bottom of the pill visually
-                    .padding(.bottom, 6)
-                    
-                    Spacer()
                     
                     if step == 3 {
-                        Button(action: { withAnimation { isCompleted.toggle() } }) {
-                            Circle()
-                                .stroke(Color.white, lineWidth: 2)
-                                .background(Circle().fill(isCompleted ? Color.white : Color.clear))
-                                .frame(width: 28, height: 28)
-                                .overlay(
-                                    Image(systemName: "checkmark")
-                                        .font(.caption.weight(.bold))
-                                        .foregroundColor(themeColor)
-                                        .opacity(isCompleted ? 1 : 0)
-                                )
-                        }
-                        .padding(.bottom, 6)
-                    } else if step == 2 {
+                        Spacer()
                         Circle()
-                            .stroke(Color.white, lineWidth: 2)
-                            .frame(width: 24, height: 24)
-                            .padding(.bottom, 6)
+                            .strokeBorder(Color.white, lineWidth: 2)
+                            .frame(width: 28, height: 28)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -266,212 +244,199 @@ extension AddEditTaskView {
                         .overlay(Capsule().stroke(Color.white, lineWidth: 3))
                 } else {
                     Circle()
-                        // Fix for Icon Background adapting to light/dark system mode
-                        .fill(cardBackground.opacity(0.95))
+                        .fill(Color.white.opacity(0.2))
                         .frame(width: 64, height: 64)
-                        .overlay(Circle().stroke(Color.white, lineWidth: 3))
                 }
                 
-                // NO offset applied, always sits right in the dead center!
                 Image(systemName: icon)
                     .font(.title)
-                    .foregroundColor(themeColor)
+                    .foregroundColor(step == 3 ? themeColor : .white)
             }
             
+            // Sub-icon circle
             if step == 3 {
-                Button(action: { withAnimation { showingColorPicker.toggle() } }) {
-                    Circle()
-                        .fill(primaryBackground)
-                        .frame(width: 28, height: 28)
-                        .overlay(
-                            Image(systemName: "paintpalette.fill")
-                                .font(.caption)
-                                .foregroundColor(themeColor)
-                        )
-                }
-                .offset(x: -5, y: 5)
+                Circle()
+                    .fill(cardBackground)
+                    .frame(width: 24, height: 24)
+                    .overlay(Circle().stroke(Color.white, lineWidth: 2))
+                    .overlay(
+                        Image(systemName: "pawprint.fill")
+                            .font(.system(size: 10))
+                            .foregroundColor(themeColor)
+                    )
+                    .offset(x: -4, y: 4)
             }
         }
     }
     
-    // STEP 1: SUGGESTIONS / RECENT
+    // MARK: - STEP 1: Title & Icon
     var step1Body: some View {
         ScrollView {
-            VStack(spacing: 24) {
-                if filteredSuggestions.isEmpty {
-                    Text("No matching suggestions. A custom task will be created.")
-                        .font(.caption)
-                        .foregroundColor(.secondary)
-                        .padding(.top, 40)
-                } else {
+            VStack(alignment: .leading, spacing: 20) {
+                
+                Text("SUGGESTIONS")
+                    .font(.caption)
+                    .fontWeight(.bold)
+                    .foregroundColor(.secondary)
+                    .padding(.horizontal)
+                    .padding(.top, 20)
+                
+                LazyVStack(spacing: 12) {
                     ForEach(filteredSuggestions) { suggestion in
-                        suggestionRow(suggestion: suggestion)
+                        Button(action: {
+                            title = suggestion.title
+                            icon = suggestion.icon
+                            colorHex = suggestion.colorHex
+                            durationMinutes = suggestion.durationMinutes
+                            withAnimation { step = 2 }
+                        }) {
+                            HStack(spacing: 16) {
+                                ZStack {
+                                    Circle()
+                                        .fill(Color(hex: suggestion.colorHex) ?? .gray)
+                                        .frame(width: 40, height: 40)
+                                    Image(systemName: suggestion.icon)
+                                        .foregroundColor(.white)
+                                }
+                                
+                                VStack(alignment: .leading, spacing: 2) {
+                                    Text(suggestion.title)
+                                        .font(.body.weight(.medium))
+                                        .foregroundColor(.primary)
+                                    Text(formatDuration(suggestion.durationMinutes))
+                                        .font(.caption)
+                                        .foregroundColor(.secondary)
+                                }
+                                Spacer()
+                                Image(systemName: "plus")
+                                    .foregroundColor(.secondary)
+                            }
+                            .padding()
+                            .background(cardBackground)
+                            .cornerRadius(16)
+                        }
+                        .padding(.horizontal)
                     }
                 }
             }
-            .padding(.top, 30)
-            .padding(.horizontal, 24)
         }
     }
     
-    func suggestionRow(suggestion: TaskSuggestion) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: suggestion.icon)
-                .font(.title2)
-                .foregroundColor(Color(hex: suggestion.colorHex) ?? themeColor)
-                .frame(width: 30)
-            
-            VStack(alignment: .leading, spacing: 4) {
-                Text("\(formatDuration(suggestion.durationMinutes)) default")
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                Text(suggestion.title)
-                    .font(.headline)
-                    .foregroundColor(.primary)
-                
-                Divider().background(Color.secondary.opacity(0.3)).padding(.top, 8)
-            }
-        }
-        .contentShape(Rectangle())
-        .onTapGesture {
-            self.title = suggestion.title
-            self.icon = suggestion.icon
-            self.colorHex = suggestion.colorHex
-            self.durationMinutes = suggestion.durationMinutes
-            withAnimation { step = 2 }
-        }
-    }
-    
-    // STEP 2: TIME & DURATION
+    // MARK: - STEP 2: Customization (Time & Color)
     var step2Body: some View {
-        VStack(alignment: .leading, spacing: 30) {
-            // Interactive Date Picker
-            HStack {
-                Image(systemName: "calendar")
-                    .foregroundColor(themeColor)
-                DatePicker("", selection: $startTime, displayedComponents: .date)
-                    .labelsHidden()
-                    .tint(themeColor)
-                Spacer()
-            }
-            .padding(.horizontal, 24)
-            .padding(.top, 24)
-            
-            Divider().background(Color.secondary.opacity(0.3)).padding(.horizontal, 24)
-            
-            // Time Picker
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("Time")
-                        .font(.title3.weight(.semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                
-                DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
-                    .datePickerStyle(.wheel)
-                    .labelsHidden()
-                    .frame(height: 120)
-                    .clipped()
-                    .frame(maxWidth: .infinity)
-            }
-            
-            // Duration Scroller
-            VStack(alignment: .leading) {
-                HStack {
-                    Text("Duration")
-                        .font(.title3.weight(.semibold))
-                        .foregroundColor(.primary)
-                    Spacer()
-                }
-                .padding(.horizontal, 24)
-                
-                ScrollView(.horizontal, showsIndicators: false) {
-                    HStack(spacing: 12) {
-                        ForEach(durations, id: \.self) { dur in
-                            let isSelected = durationMinutes == dur
-                            Text(formatDuration(dur))
-                                .font(.subheadline.weight(isSelected ? .bold : .regular))
-                                .foregroundColor(isSelected ? primaryBackground : .secondary)
-                                .padding(.horizontal, 20)
-                                .padding(.vertical, 10)
-                                .background(isSelected ? themeColor : Color.primary.opacity(0.05))
-                                .clipShape(Capsule())
+        ScrollView {
+            VStack(spacing: 24) {
+                // Color Picker Grid
+                VStack(alignment: .leading) {
+                    Text("COLOR")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 5), spacing: 16) {
+                        ForEach(presetColors, id: \.self) { hex in
+                            Circle()
+                                .fill(Color(hex: hex) ?? .gray)
+                                .frame(width: 44, height: 44)
+                                .overlay(
+                                    Circle()
+                                        .stroke(Color.primary, lineWidth: colorHex == hex ? 3 : 0)
+                                        .padding(-4)
+                                )
                                 .onTapGesture {
-                                    withAnimation { durationMinutes = dur }
+                                    withAnimation { colorHex = hex }
                                 }
                         }
                     }
-                    .padding(.horizontal, 24)
+                    .padding()
+                    .background(cardBackground)
+                    .cornerRadius(16)
+                    .padding(.horizontal)
+                }
+                .padding(.top, 20)
+                
+                // Duration Picker Grid
+                VStack(alignment: .leading) {
+                    Text("DURATION")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    LazyVGrid(columns: Array(repeating: GridItem(.flexible()), count: 4), spacing: 12) {
+                        ForEach(durations, id: \.self) { mins in
+                            Button(action: {
+                                withAnimation { durationMinutes = mins }
+                            }) {
+                                Text(formatDuration(mins))
+                                    .font(.subheadline.weight(.medium))
+                                    .foregroundColor(durationMinutes == mins ? .white : .primary)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                                    .background(durationMinutes == mins ? themeColor : cardBackground)
+                                    .cornerRadius(12)
+                            }
+                        }
+                    }
+                    .padding(.horizontal)
+                }
+                
+                // Start Time
+                VStack(alignment: .leading) {
+                    Text("START TIME")
+                        .font(.caption.weight(.bold))
+                        .foregroundColor(.secondary)
+                        .padding(.horizontal)
+                    
+                    HStack {
+                        DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
+                            .labelsHidden()
+                            .datePickerStyle(.wheel)
+                    }
+                    .frame(maxWidth: .infinity)
+                    .padding()
+                    .background(cardBackground)
+                    .cornerRadius(16)
+                    .padding(.horizontal)
                 }
             }
         }
     }
     
-    // STEP 3: CONFIRMATION
+    // MARK: - STEP 3: Final Settings (Date, Repeat, Notes)
     var step3Body: some View {
-        ScrollView(showsIndicators: false) {
+        ScrollView {
             VStack(spacing: 24) {
-                
-                if showingColorPicker {
-                    ScrollView(.horizontal, showsIndicators: false) {
-                        HStack(spacing: 15) {
-                            ForEach(presetColors, id: \.self) { hex in
-                                Circle()
-                                    .fill(Color(hex: hex) ?? .white)
-                                    .frame(width: 36, height: 36)
-                                    .overlay(Circle().stroke(Color.primary, lineWidth: colorHex == hex ? 3 : 0))
-                                    .onTapGesture {
-                                        withAnimation {
-                                            colorHex = hex
-                                            showingColorPicker = false
-                                        }
-                                    }
-                            }
-                        }
-                        .padding(.horizontal, 24)
-                        .padding(.vertical, 16)
-                    }
-                    .background(Color.primary.opacity(0.1))
-                    .transition(.opacity)
-                }
-                
-                // Settings Block (Date, Time, Repeat) - Removed Alert Feature
+                // Section 1: Core Details
                 VStack(spacing: 0) {
-                    HStack(spacing: 16) {
+                    HStack {
                         Image(systemName: "calendar")
                             .foregroundColor(themeColor)
                             .frame(width: 24)
-                        DatePicker("", selection: $startTime, displayedComponents: .date)
+                        DatePicker("Date", selection: $startTime, displayedComponents: .date)
                             .labelsHidden()
-                            .tint(themeColor)
                         Spacer()
                     }
                     .padding()
                     
-                    Divider().background(Color.secondary.opacity(0.3)).padding(.leading, 56)
+                    Divider().padding(.leading, 40)
                     
-                    HStack(spacing: 16) {
-                        Image(systemName: "clock.fill")
+                    HStack {
+                        Image(systemName: "clock")
                             .foregroundColor(themeColor)
                             .frame(width: 24)
-                        DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
+                        DatePicker("Time", selection: $startTime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
-                            .tint(themeColor)
                         Spacer()
                     }
                     .padding()
                     
-                    Divider().background(Color.secondary.opacity(0.3)).padding(.leading, 56)
+                    Divider().padding(.leading, 40)
                     
-                    // Functional Repeat Picker
-                    HStack(spacing: 16) {
-                        Image(systemName: "arrow.2.squarepath")
+                    HStack {
+                        Image(systemName: "repeat")
                             .foregroundColor(themeColor)
                             .frame(width: 24)
                         Text("Repeat")
-                            .foregroundColor(.primary)
                         Spacer()
                         Picker("", selection: $repeatFreq) {
                             ForEach(RepeatFrequency.allCases, id: \.self) { freq in
@@ -480,17 +445,17 @@ extension AddEditTaskView {
                         }
                         .tint(.secondary)
                     }
-                    .padding(.horizontal)
-                    .padding(.vertical, 8) // Picker requires slightly different vertical padding to look flush
+                    .padding()
                 }
                 .background(cardBackground)
                 .cornerRadius(16)
+                .padding(.horizontal)
+                .padding(.top, 20)
                 
-                // Notes Block
+                // Section 2: Notes
                 VStack(alignment: .leading, spacing: 0) {
                     HStack {
                         Image(systemName: "doc.text")
-                            .font(.system(size: 20))
                             .foregroundColor(.secondary)
                         Text("Notes")
                             .foregroundColor(.secondary)
@@ -498,35 +463,38 @@ extension AddEditTaskView {
                     }
                     .padding()
                     
-                    Divider().background(Color.secondary.opacity(0.3))
+                    Divider()
                     
-                    ZStack(alignment: .topLeading) {
-                        if notes.isEmpty {
-                            Text("Add notes, meeting links or phone numbers...")
-                                .foregroundColor(.secondary.opacity(0.5))
-                                .padding(.horizontal, 16)
-                                .padding(.top, 16)
-                        }
-                        TextEditor(text: $notes)
-                            .scrollContentBackground(.hidden)
-                            .background(Color.clear)
-                            .foregroundColor(.primary)
-                            .padding(.horizontal, 12)
-                            .padding(.vertical, 8)
-                            .frame(minHeight: 120)
-                    }
+                    TextEditor(text: $notes)
+                        .frame(minHeight: 100)
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .scrollContentBackground(.hidden)
+                        .background(Color.clear)
+                        .overlay(
+                            Group {
+                                if notes.isEmpty {
+                                    Text("Add notes, meeting links or phone numbers...")
+                                        .foregroundColor(Color.gray.opacity(0.6))
+                                        .padding(.horizontal, 16)
+                                        .padding(.top, 16)
+                                        .allowsHitTesting(false)
+                                }
+                            }, alignment: .topLeading
+                        )
                 }
                 .background(cardBackground)
                 .cornerRadius(16)
+                .padding(.horizontal)
                 
-                // Delete Button
+                // Delete Button (if editing)
                 if taskToEdit != nil {
-                    Button(action: {
+                    Button(role: .destructive) {
                         if let task = taskToEdit {
                             viewModel.deleteTask(task)
                         }
                         dismiss()
-                    }) {
+                    } label: {
                         HStack {
                             Image(systemName: "trash")
                             Text("Delete")
@@ -538,44 +506,46 @@ extension AddEditTaskView {
                         .background(cardBackground)
                         .cornerRadius(16)
                     }
+                    .padding(.horizontal)
                 }
             }
-            .padding(24)
-            .padding(.bottom, 60) // Extra padding to scroll past the footer button
+            .padding(.bottom, 100) // Space for floating bottom button
         }
     }
     
     // MARK: - Helpers
     private func saveTask() {
-        let task = TaskItem(
+        let finalTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let newTask = TaskItem(
             id: taskToEdit?.id ?? UUID(),
-            title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Task" : title,
+            title: finalTitle.isEmpty ? "New Task" : finalTitle,
             startTime: startTime,
-            duration: durationMinutes * 60,
+            duration: TimeInterval(durationMinutes * 60),
             colorHex: colorHex,
             icon: icon,
-            isCompleted: isCompleted, // Grab isCompleted directly from our state variable here
-            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : notes,
+            isCompleted: isCompleted,
+            notes: notes.isEmpty ? nil : notes,
             repeatFrequency: repeatFreq
         )
         
         if taskToEdit != nil {
-            viewModel.updateTask(task)
+            viewModel.updateTask(newTask)
         } else {
-            viewModel.addTask(task)
+            viewModel.addTask(newTask)
         }
         dismiss()
     }
     
-    private func formatDuration(_ minutes: Double) -> String {
-        if minutes < 60 {
-            return "\(Int(minutes)) min"
-        } else if minutes.truncatingRemainder(dividingBy: 60) == 0 {
-            return "\(Int(minutes / 60)) hr"
+    private func formatDuration(_ mins: Double) -> String {
+        if mins < 60 {
+            return "\(Int(mins)) min"
+        } else if mins.truncatingRemainder(dividingBy: 60) == 0 {
+            return "\(Int(mins / 60)) h"
         } else {
-            let hrs = Int(minutes / 60)
-            let mins = Int(minutes.truncatingRemainder(dividingBy: 60))
-            return "\(hrs) hr, \(mins) min"
+            let h = Int(mins / 60)
+            let m = Int(mins.truncatingRemainder(dividingBy: 60))
+            return "\(h) h \(m) m"
         }
     }
 }
