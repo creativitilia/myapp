@@ -79,7 +79,6 @@
 		7585966A2F5435800001F05D /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
-				7585967D2F5440330001F05D /* HorizontalCalendarView.swift */,
 				7585966F2F5435B10001F05D /* DayScheduleViewModel.swift */,
 			);
 			path = ViewModels;
@@ -88,6 +87,7 @@
 		7585966B2F5435860001F05D /* Views */ = {
 			isa = PBXGroup;
 			children = (
+				7585967D2F5440330001F05D /* HorizontalCalendarView.swift */,
 				758596732F5435E50001F05D /* TimelineView.swift */,
 				758596722F5435D90001F05D /* AddEditTaskView.swift */,
 				758596712F5435D00001F05D /* TaskBlockView.swift */,
