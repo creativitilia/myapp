@@ -4,7 +4,7 @@ import SwiftUI
 struct lullyApp: App {
     var body: some Scene {
         WindowGroup {
-            DayTimelineView()
+            TimelineView()
         }
     }
 }

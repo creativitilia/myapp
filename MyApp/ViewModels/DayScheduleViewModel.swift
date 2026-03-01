@@ -1,89 +1,67 @@
 import Foundation
 import SwiftUI
 
-@MainActor
-final class DayScheduleViewModel: ObservableObject {
-    @Published private(set) var tasks: [TaskItem] = []
-
-    let pixelsPerMinute: CGFloat = 1.4
-    let minuteSnap: Int = 5
-
-    private let store: TaskStore
-    private let calendar = Calendar.current
-
-    init(store: TaskStore = TaskStore()) {
-        self.store = store
-        self.tasks = store.load().sorted(by: { $0.startTime < $1.startTime })
+class DayScheduleViewModel: ObservableObject {
+    @Published var tasks: [TaskItem] = []
+    
+    // Layout logic: 1.5 points per minute = 90 points per hour height
+    let pixelsPerMinute: CGFloat = 1.5
+    
+    init() {
+        loadTasks()
     }
-
-    // MARK: - CRUD
+    
+    // MARK: - CRUD Operations
+    func loadTasks() {
+        self.tasks = TaskStore.shared.load().sorted { $0.startTime < $1.startTime }
+    }
+    
+    func saveTasks() {
+        TaskStore.shared.save(tasks: self.tasks)
+    }
+    
     func addTask(_ task: TaskItem) {
         tasks.append(task)
-        sortAndPersist()
+        sortAndSave()
     }
-
-    func updateTask(_ updated: TaskItem) {
-        guard let idx = tasks.firstIndex(where: { $0.id == updated.id }) else { return }
-        tasks[idx] = updated
-        sortAndPersist()
+    
+    func updateTask(_ task: TaskItem) {
+        if let index = tasks.firstIndex(where: { $0.id == task.id }) {
+            tasks[index] = task
+            sortAndSave()
+        }
     }
-
+    
     func deleteTask(_ task: TaskItem) {
         tasks.removeAll { $0.id == task.id }
-        sortAndPersist()
+        saveTasks()
     }
-
-    // MARK: - Layout Helpers
-    func minutesSinceMidnight(for date: Date) -> Int {
-        let comps = calendar.dateComponents([.hour, .minute], from: date)
-        return (comps.hour ?? 0) * 60 + (comps.minute ?? 0)
+    
+    func updateTaskStartTime(id: UUID, newStartTime: Date) {
+        if let index = tasks.firstIndex(where: { $0.id == id }) {
+            tasks[index].startTime = newStartTime
+            sortAndSave()
+        }
     }
-
-    func yPosition(for task: TaskItem) -> CGFloat {
-        CGFloat(minutesSinceMidnight(for: task.startTime)) * pixelsPerMinute
-    }
-
-    func height(for task: TaskItem) -> CGFloat {
-        max(24, CGFloat(task.durationMinutes) * pixelsPerMinute)
-    }
-
-    func timelineHeight() -> CGFloat {
-        CGFloat(24 * 60) * pixelsPerMinute
-    }
-
-    func hourLabel(for hour: Int) -> String {
-        String(format: "%02d:00", hour)
-    }
-
-    // MARK: - Drag / Reschedule
-    func reschedule(task: TaskItem, byDragYOffset offset: CGFloat) {
-        let deltaMinutes = Int((offset / pixelsPerMinute).rounded())
-        let originalMinutes = minutesSinceMidnight(for: task.startTime)
-        var newMinutes = originalMinutes + deltaMinutes
-
-        newMinutes = max(0, min(23 * 60 + 59, newMinutes))
-        newMinutes = snap(minutes: newMinutes, step: minuteSnap)
-
-        let newDate = dateToday(atMinutesSinceMidnight: newMinutes)
-        var updated = task
-        updated.startTime = newDate
-        updateTask(updated)
-    }
-
-    func dateToday(atMinutesSinceMidnight minutes: Int) -> Date {
-        let start = calendar.startOfDay(for: Date())
-        return calendar.date(byAdding: .minute, value: minutes, to: start) ?? start
-    }
-
-    private func snap(minutes: Int, step: Int) -> Int {
-        let remainder = minutes % step
-        let down = minutes - remainder
-        let up = down + step
-        return (minutes - down) < (up - minutes) ? down : up
-    }
-
-    private func sortAndPersist() {
+    
+    private func sortAndSave() {
         tasks.sort { $0.startTime < $1.startTime }
-        store.save(tasks)
+        saveTasks()
+    }
+    
+    // MARK: - Positioning & Time Math
+    func minutesSinceMidnight(for date: Date) -> CGFloat {
+        let calendar = Calendar.current
+        let components = calendar.dateComponents([.hour, .minute], from: date)
+        return CGFloat((components.hour ?? 0) * 60 + (components.minute ?? 0))
+    }
+    
+    func startOfDay() -> Date {
+        Calendar.current.startOfDay(for: Date())
+    }
+    
+    func dateFromMinutesSinceMidnight(_ minutes: CGFloat) -> Date {
+        let start = startOfDay()
+        return Calendar.current.date(byAdding: .minute, value: Int(minutes), to: start) ?? start
     }
 }

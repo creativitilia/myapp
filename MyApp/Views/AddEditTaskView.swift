@@ -1,100 +1,110 @@
 import SwiftUI
 
 struct AddEditTaskView: View {
-    @Environment(\.dismiss) private var dismiss
-
-    let existingTask: TaskItem?
-    let onSave: (TaskItem) -> Void
-    let onDelete: ((TaskItem) -> Void)?
-
+    @Environment(\.dismiss) var dismiss
+    @ObservedObject var viewModel: DayScheduleViewModel
+    var taskToEdit: TaskItem?
+    
     @State private var title: String = ""
     @State private var startTime: Date = Date()
-    @State private var durationMinutes: Double = 60
-    @State private var colorHex: String = "#7BC6FF"
-    @State private var icon: String = ""
-
-    private let colors = ["#7BC6FF", "#9FE3B1", "#FFC58F", "#E6A4FF", "#FFD7E2", "#FFE68A"]
-
+    @State private var durationMinutes: Int = 60
+    @State private var color: Color = .blue
+    @State private var icon: String = "circle.fill"
+    
+    // Standard pastel-like colors for tasks
+    let colors: [Color] = [.blue, .purple, .pink, .red, .orange, .yellow, .green, .mint, .cyan, .gray]
+    
     var body: some View {
-        NavigationStack {
+        NavigationView {
             Form {
-                Section("Task") {
-                    TextField("Title", text: $title)
-                    TextField("SF Symbol (optional)", text: $icon)
+                Section(header: Text("Task Details")) {
+                    TextField("What do you want to do?", text: $title)
+                    
+                    DatePicker("Start Time", selection: $startTime, displayedComponents: .hourAndMinute)
+                    
+                    Stepper("Duration: \(durationMinutes) min", value: $durationMinutes, in: 5...720, step: 5)
                 }
-
-                Section("Time") {
-                    DatePicker("Start", selection: $startTime, displayedComponents: [.hourAndMinute])
-                    HStack {
-                        Text("Duration")
-                        Spacer()
-                        Text("\(Int(durationMinutes)) min")
-                            .foregroundStyle(.secondary)
-                    }
-                    Slider(value: $durationMinutes, in: 5...300, step: 5)
-                }
-
-                Section("Color") {
-                    HStack {
-                        ForEach(colors, id: \.self) { hex in
-                            Circle()
-                                .fill(Color(hex: hex))
-                                .frame(width: 28, height: 28)
-                                .overlay(
-                                    Circle().stroke(colorHex == hex ? Color.primary : .clear, lineWidth: 2)
-                                )
-                                .onTapGesture { colorHex = hex }
+                
+                Section(header: Text("Appearance")) {
+                    ScrollView(.horizontal, showsIndicators: false) {
+                        HStack(spacing: 12) {
+                            ForEach(colors, id: \.self) { clr in
+                                Circle()
+                                    .fill(clr)
+                                    .frame(width: 36, height: 36)
+                                    .overlay(
+                                        Circle()
+                                            .stroke(Color.primary, lineWidth: color == clr ? 2 : 0)
+                                    )
+                                    .onTapGesture {
+                                        color = clr
+                                    }
+                            }
                         }
+                        .padding(.vertical, 8)
                     }
                 }
-
-                if let existingTask, let onDelete {
+                
+                if taskToEdit != nil {
                     Section {
-                        Button(role: .destructive) {
-                            onDelete(existingTask)
+                        Button("Delete Task", role: .destructive) {
+                            if let task = taskToEdit {
+                                viewModel.deleteTask(task)
+                            }
                             dismiss()
-                        } label: {
-                            Text("Delete Task")
                         }
+                        .frame(maxWidth: .infinity, alignment: .center)
                     }
                 }
             }
-            .navigationTitle(existingTask == nil ? "New Task" : "Edit Task")
+            .navigationTitle(taskToEdit == nil ? "New Task" : "Edit Task")
+            .navigationBarTitleDisplayMode(.inline)
             .toolbar {
-                ToolbarItem(placement: .topBarLeading) {
+                ToolbarItem(placement: .navigationBarLeading) {
                     Button("Cancel") { dismiss() }
                 }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Button("Save") {
-                        let task = TaskItem(
-                            id: existingTask?.id ?? UUID(),
-                            title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Task" : title,
-                            startTime: mergeDateWithTodayTime(startTime),
-                            duration: durationMinutes * 60,
-                            colorHex: colorHex,
-                            icon: icon.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : icon
-                        )
-                        onSave(task)
-                        dismiss()
-                    }
+                ToolbarItem(placement: .navigationBarTrailing) {
+                    Button("Save") { saveTask() }
+                        .disabled(title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty)
                 }
             }
-            .onAppear(perform: loadExisting)
+            .onAppear(perform: setupForm)
         }
     }
-
-    private func loadExisting() {
-        guard let task = existingTask else { return }
-        title = task.title
-        startTime = task.startTime
-        durationMinutes = task.durationMinutes
-        colorHex = task.colorHex
-        icon = task.icon ?? ""
+    
+    private func setupForm() {
+        if let task = taskToEdit {
+            title = task.title
+            startTime = task.startTime
+            durationMinutes = Int(task.duration / 60)
+            color = task.color
+            icon = task.icon ?? "circle.fill"
+        } else {
+            // Snap default start time to the next 5-minute interval
+            let current = Date()
+            let calendar = Calendar.current
+            var comps = calendar.dateComponents([.year, .month, .day, .hour, .minute], from: current)
+            let currentMinute = comps.minute ?? 0
+            comps.minute = ((currentMinute + 4) / 5) * 5 // Round up to nearest 5
+            startTime = calendar.date(from: comps) ?? current
+        }
     }
-
-    private func mergeDateWithTodayTime(_ date: Date) -> Date {
-        let cal = Calendar.current
-        let hm = cal.dateComponents([.hour, .minute], from: date)
-        return cal.date(bySettingHour: hm.hour ?? 0, minute: hm.minute ?? 0, second: 0, of: Date()) ?? Date()
+    
+    private func saveTask() {
+        let newTask = TaskItem(
+            id: taskToEdit?.id ?? UUID(),
+            title: title.trimmingCharacters(in: .whitespacesAndNewlines),
+            startTime: startTime,
+            duration: TimeInterval(durationMinutes * 60),
+            colorHex: color.toHex() ?? "#3478F6",
+            icon: icon
+        )
+        
+        if taskToEdit != nil {
+            viewModel.updateTask(newTask)
+        } else {
+            viewModel.addTask(newTask)
+        }
+        dismiss()
     }
 }

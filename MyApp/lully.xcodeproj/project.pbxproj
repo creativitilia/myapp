@@ -7,13 +7,12 @@
 	objects = {
 
 /* Begin PBXBuildFile section */
-		758596752F54394D0001F05D /* DayTimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596732F5435E50001F05D /* DayTimelineView.swift */; };
+		758596752F54394D0001F05D /* TimelineView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596732F5435E50001F05D /* TimelineView.swift */; };
 		758596762F5439550001F05D /* TaskStore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7585966E2F5435A30001F05D /* TaskStore.swift */; };
 		758596772F54395B0001F05D /* AddEditTaskView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596722F5435D90001F05D /* AddEditTaskView.swift */; };
 		758596782F5439600001F05D /* TaskBlockView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596712F5435D00001F05D /* TaskBlockView.swift */; };
 		758596792F5439640001F05D /* TimeColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596702F5435BD0001F05D /* TimeColumnView.swift */; };
 		7585967A2F5439680001F05D /* DayScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7585966F2F5435B10001F05D /* DayScheduleViewModel.swift */; };
-		7585967B2F54396C0001F05D /* Color+Hex.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596742F54361E0001F05D /* Color+Hex.swift */; };
 		7585967C2F5439710001F05D /* TaskItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7585966D2F54359B0001F05D /* TaskItem.swift */; };
 /* End PBXBuildFile section */
 
@@ -25,8 +24,7 @@
 		758596702F5435BD0001F05D /* TimeColumnView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimeColumnView.swift; sourceTree = "<group>"; };
 		758596712F5435D00001F05D /* TaskBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskBlockView.swift; sourceTree = "<group>"; };
 		758596722F5435D90001F05D /* AddEditTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditTaskView.swift; sourceTree = "<group>"; };
-		758596732F5435E50001F05D /* DayTimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DayTimelineView.swift; sourceTree = "<group>"; };
-		758596742F54361E0001F05D /* Color+Hex.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = "Color+Hex.swift"; sourceTree = "<group>"; };
+		758596732F5435E50001F05D /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -71,7 +69,6 @@
 		758596692F5435770001F05D /* Models */ = {
 			isa = PBXGroup;
 			children = (
-				758596742F54361E0001F05D /* Color+Hex.swift */,
 				7585966D2F54359B0001F05D /* TaskItem.swift */,
 			);
 			path = Models;
@@ -88,7 +85,7 @@
 		7585966B2F5435860001F05D /* Views */ = {
 			isa = PBXGroup;
 			children = (
-				758596732F5435E50001F05D /* DayTimelineView.swift */,
+				758596732F5435E50001F05D /* TimelineView.swift */,
 				758596722F5435D90001F05D /* AddEditTaskView.swift */,
 				758596712F5435D00001F05D /* TaskBlockView.swift */,
 				758596702F5435BD0001F05D /* TimeColumnView.swift */,
@@ -179,10 +176,9 @@
 			buildActionMask = 2147483647;
 			files = (
 				758596762F5439550001F05D /* TaskStore.swift in Sources */,
-				758596752F54394D0001F05D /* DayTimelineView.swift in Sources */,
+				758596752F54394D0001F05D /* TimelineView.swift in Sources */,
 				7585967A2F5439680001F05D /* DayScheduleViewModel.swift in Sources */,
 				7585967C2F5439710001F05D /* TaskItem.swift in Sources */,
-				7585967B2F54396C0001F05D /* Color+Hex.swift in Sources */,
 				758596782F5439600001F05D /* TaskBlockView.swift in Sources */,
 				758596772F54395B0001F05D /* AddEditTaskView.swift in Sources */,
 				758596792F5439640001F05D /* TimeColumnView.swift in Sources */,
