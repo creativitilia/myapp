@@ -30,6 +30,7 @@ struct AddEditTaskView: View {
     @State private var colorHex: String = "#BA68C8" // Default to Purple like your screenshot
     @State private var icon: String = "book.fill"
     @State private var showingColorPicker = false
+    @State private var showingDeleteConfirmation = false // New state for delete alert
     
     private let presetColors: [String] = [
         "#E57373", "#81C784", "#64B5F6", "#4FC3F7", "#7986CB",
@@ -233,6 +234,18 @@ struct AddEditTaskView: View {
                 repeatFreq = task.repeatFrequency
                 step = 3 // Jump to confirmation for existing tasks
             }
+        }
+        // Attach the alert to the main view body
+        .alert("Delete Task?", isPresented: $showingDeleteConfirmation) {
+            Button("Cancel", role: .cancel) { }
+            Button("Delete", role: .destructive) {
+                if let task = taskToEdit {
+                    viewModel.deleteTask(task)
+                }
+                dismiss()
+            }
+        } message: {
+            Text("Are you sure you want to delete this task? This action cannot be undone.")
         }
     }
 }
@@ -516,10 +529,7 @@ extension AddEditTaskView {
                 // Delete Button (if editing)
                 if taskToEdit != nil {
                     Button(role: .destructive) {
-                        if let task = taskToEdit {
-                            viewModel.deleteTask(task)
-                        }
-                        dismiss()
+                        showingDeleteConfirmation = true // Trigger the alert instead of deleting immediately
                     } label: {
                         HStack {
                             Image(systemName: "trash")
