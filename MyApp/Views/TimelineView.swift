@@ -16,7 +16,7 @@ struct TimelineView: View {
                                 .frame(height: 60 * viewModel.pixelsPerMinute, alignment: .top)
                         }
                     }
-                    .padding(.left, 50) // Make room for time labels
+                    .padding(.leading, 50) // Make room for time labels
                     
                     // 2. Content Layer
                     HStack(alignment: .top, spacing: 10) {
