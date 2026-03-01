@@ -2,14 +2,22 @@ import Foundation
 import SwiftUI
 import Combine
 
+// Determines exactly where and how a task should be drawn
+struct TaskLayout {
+    let task: TaskItem
+    let yPos: CGFloat
+    let height: CGFloat
+    let zIndex: Double
+    let showOverlapWarning: Bool
+    let warningYPos: CGFloat
+}
+
 final class DayScheduleViewModel: ObservableObject {
-    // Keep all tasks in memory, but publish the ones for the selected date
     @Published private var allTasks: [TaskItem] = []
     
     @Published var selectedDate: Date = Date()
     @Published var currentTime: Date = Date()
     
-    // Increased to 2.0 to match the spacious, tall design of v2.0
     let pixelsPerMinute: CGFloat = 2.0
     let minuteSnap: Int = 5
     let timeColumnWidth: CGFloat = 65
@@ -22,7 +30,6 @@ final class DayScheduleViewModel: ObservableObject {
         self.store = store
         self.allTasks = store.load().sorted(by: { $0.startTime < $1.startTime })
         
-        // Timer for the "Current Time" red line indicator
         Timer.publish(every: 60, on: .main, in: .common)
             .autoconnect()
             .sink { [weak self] date in
@@ -31,14 +38,67 @@ final class DayScheduleViewModel: ObservableObject {
             .store(in: &cancellables)
     }
     
-    // MARK: - Computed Properties
     var tasks: [TaskItem] {
         allTasks.filter { calendar.isDate($0.startTime, inSameDayAs: selectedDate) }
     }
 
-    // NEW: Helper to get tasks for any specific date
     func tasksFor(date: Date) -> [TaskItem] {
         allTasks.filter { calendar.isDate($0.startTime, inSameDayAs: date) }
+    }
+    
+    // MARK: - THE OVERLAP ENGINE
+    var layoutAttributes: [TaskLayout] {
+        var layouts = [TaskLayout]()
+        let dayTasks = tasks.sorted { $0.startTime < $1.startTime }
+        
+        var prevY: CGFloat = 0
+        var prevHeight: CGFloat = 0
+        var staggerCount = 0
+        
+        for (index, task) in dayTasks.enumerated() {
+            var y = yPosition(for: task.startTime)
+            let h = height(for: task)
+            var showWarning = false
+            var warnY: CGFloat = 0
+            
+            if index > 0 {
+                let prevTask = dayTasks[index - 1]
+                let prevEnd = prevTask.startTime.addingTimeInterval(prevTask.duration)
+                
+                // Overlap detected!
+                if task.startTime < prevEnd {
+                    showWarning = true
+                    
+                    // If they start at the exact same time, artificially push this one down to stack them
+                    if task.startTime == prevTask.startTime {
+                        staggerCount += 1
+                        y = prevY + 48 // Push down by pill height so titles don't collide
+                    } else {
+                        staggerCount = 0
+                    }
+                    
+                    // Calculate perfectly centered Y for the "Tasks are overlapping" text
+                    let prevCenter = prevY + (prevHeight / 2)
+                    let currentCenter = y + (h / 2)
+                    warnY = ((prevCenter + currentCenter) / 2) - 8 // -8 to visually center the font height
+                } else {
+                    staggerCount = 0
+                }
+            }
+            
+            layouts.append(TaskLayout(
+                task: task,
+                yPos: y,
+                height: h,
+                zIndex: Double(-index), // Earlier tasks get higher Z-Index to overlap later tasks
+                showOverlapWarning: showWarning,
+                warningYPos: warnY
+            ))
+            
+            prevY = y
+            prevHeight = h
+        }
+        return layouts
     }
 
     // MARK: - CRUD
@@ -64,6 +124,11 @@ final class DayScheduleViewModel: ObservableObject {
             sortAndPersist()
         }
     }
+    
+    private func sortAndPersist() {
+        allTasks.sort(by: { $0.startTime < $1.startTime })
+        store.save(allTasks)
+    }
 
     // MARK: - Layout Helpers
     func minutesSinceMidnight(for date: Date) -> Int {
@@ -76,7 +141,6 @@ final class DayScheduleViewModel: ObservableObject {
     }
 
     func height(for task: TaskItem) -> CGFloat {
-        // Ensure standard height of 44 for tap targets
         max(44, CGFloat(task.durationMinutes) * pixelsPerMinute)
     }
 
@@ -89,48 +153,5 @@ final class DayScheduleViewModel: ObservableObject {
         formatter.dateFormat = "h:00 a"
         let date = calendar.date(bySettingHour: hour, minute: 0, second: 0, of: Date()) ?? Date()
         return formatter.string(from: date)
-    }
-
-    // MARK: - Drag / Reschedule
-    func reschedule(task: TaskItem, byDragYOffset offset: CGFloat) {
-        let deltaMinutes = Int((offset / pixelsPerMinute).rounded())
-        let originalMinutes = minutesSinceMidnight(for: task.startTime)
-        var newMinutes = originalMinutes + deltaMinutes
-
-        newMinutes = max(0, min(23 * 60 + 59, newMinutes))
-        newMinutes = snap(minutes: newMinutes, step: minuteSnap)
-
-        let startOfDay = calendar.startOfDay(for: selectedDate)
-        let newDate = calendar.date(byAdding: .minute, value: newMinutes, to: startOfDay) ?? startOfDay
-        
-        var updated = task
-        updated.startTime = newDate
-        updateTask(updated)
-    }
-
-    // New helper required by the drag logic inside TaskBlockView
-    func dateFromMinutesSinceMidnight(_ minutes: CGFloat) -> Date {
-        let startOfDay = calendar.startOfDay(for: selectedDate)
-        return calendar.date(byAdding: .minute, value: Int(minutes), to: startOfDay) ?? startOfDay
-    }
-
-    // New helper required by the drag logic inside TaskBlockView
-    func updateTaskStartTime(id: UUID, newStartTime: Date) {
-        if let idx = allTasks.firstIndex(where: { $0.id == id }) {
-            allTasks[idx].startTime = newStartTime
-            sortAndPersist()
-        }
-    }
-
-    private func snap(minutes: Int, step: Int) -> Int {
-        let remainder = minutes % step
-        let down = minutes - remainder
-        let up = down + step
-        return (minutes - down) < (up - minutes) ? down : up
-    }
-
-    private func sortAndPersist() {
-        allTasks.sort { $0.startTime < $1.startTime }
-        store.save(tasks: allTasks) // FIXED: Added "tasks:" argument label
     }
 }

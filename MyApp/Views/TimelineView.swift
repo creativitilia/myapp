@@ -60,7 +60,7 @@ struct TimelineView: View {
                                 // A. Time Labels (Far left)
                                 TimeColumnView(vm: vm)
                                 
-                                // B. Continuous Vertical Line Background (Dashed style)
+                                // B. Continuous Vertical Line Background
                                 Path { path in
                                     path.move(to: CGPoint(x: 0, y: 0))
                                     path.addLine(to: CGPoint(x: 0, y: vm.timelineHeight()))
@@ -78,38 +78,45 @@ struct TimelineView: View {
                                         .frame(width: vm.timeColumnWidth, alignment: .trailing)
                                         .offset(y: currentY - 7)
                                         .animation(.linear(duration: 1.0), value: currentY)
+                                        .zIndex(50) // Float above everything
                                 }
                                 
-                                // D. Task Blocks (Dragging completely removed)
-                                ForEach(vm.tasks) { task in
-                                    let taskHeight = vm.height(for: task)
-                                    let yPos = vm.yPosition(for: task.startTime)
+                                // D. Render Task Layouts (Overlap Engine)
+                                ForEach(vm.layoutAttributes, id: \.task.id) { layout in
                                     
+                                    // Overlap Warning Label
+                                    if layout.showOverlapWarning {
+                                        Text("Tasks are overlapping")
+                                            .font(.caption.weight(.medium))
+                                            .foregroundColor(themePink)
+                                            .padding(.leading, vm.timeColumnWidth + 10 + 48 + 16)
+                                            .offset(y: layout.warningYPos)
+                                            .zIndex(100)
+                                    }
+                                    
+                                    // Task Pill
                                     HStack {
                                         Spacer().frame(width: vm.timeColumnWidth + 10)
                                         TaskBlockView(
-                                            task: task,
-                                            height: taskHeight,
-                                            onTap: { editingTask = task },
-                                            onToggleComplete: { vm.toggleCompletion(for: task) }
+                                            task: layout.task,
+                                            height: layout.height,
+                                            onTap: { editingTask = layout.task },
+                                            onToggleComplete: { vm.toggleCompletion(for: layout.task) }
                                         )
                                     }
-                                    .offset(y: yPos) // No more drag offset calculation!
+                                    .offset(y: layout.yPos)
+                                    .zIndex(layout.zIndex) // Forces earlier tasks to cutout later ones
                                 }
                             }
-                            .frame(height: vm.timelineHeight() + 100, alignment: .top) // extra padding at bottom
+                            .frame(height: vm.timelineHeight() + 100, alignment: .top)
                             .padding(.vertical, 20)
                         }
                         .background(darkBackground)
-                        .onAppear {
-                            scrollToCurrentHour(using: scrollProxy)
-                        }
-                        .onChange(of: vm.selectedDate) {
-                            scrollToCurrentHour(using: scrollProxy)
-                        }
-                    } // End ScrollViewReader
+                        .onAppear { scrollToCurrentHour(using: scrollProxy) }
+                        .onChange(of: vm.selectedDate) { scrollToCurrentHour(using: scrollProxy) }
+                    }
                     
-                    // Add Button Floating
+                    // Add Button
                     Button(action: { showingAdd = true }) {
                         Image(systemName: "plus")
                             .font(.title2.weight(.bold))
@@ -134,11 +141,9 @@ struct TimelineView: View {
         }
     }
     
-    // Helper function to handle the scrolling logic
     private func scrollToCurrentHour(using proxy: ScrollViewProxy) {
         if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
             let currentHour = vm.calendar.component(.hour, from: vm.currentTime)
-            
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
                 withAnimation(.easeOut(duration: 0.6)) {
                     proxy.scrollTo(currentHour, anchor: .center)

@@ -6,29 +6,28 @@ struct TaskBlockView: View {
     let onTap: () -> Void
     let onToggleComplete: () -> Void
     
-    // The width of the task pill in the timeline
     let pillWidth: CGFloat = 48
+    let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.12)
     
     var body: some View {
+        // Aligned back to the center as requested
         HStack(alignment: .center, spacing: 16) {
             
             // 1. The Unified Pill Shape
             ZStack(alignment: .center) {
-                // The main background capsule that stretches based on duration
                 Capsule()
-                    // REMOVED OPACITY: Now completely solid when not completed
                     .fill(task.isCompleted ? task.color.opacity(0.3) : task.color)
                     .frame(width: pillWidth, height: max(height, pillWidth))
                 
-                // The icon, perfectly centered in the capsule
                 Image(systemName: task.isCompleted ? "checkmark" : (task.icon ?? "doc.text.fill"))
                     .font(.system(size: 20, weight: .bold))
                     .foregroundColor(task.isCompleted ? task.color : .white)
             }
-            // Add a white stroke around the whole pill to match the "Structured" app aesthetic
+            // THE CUTOUT TRICK: This thick dark stroke matches the timeline background,
+            // naturally erasing the dotted line and any pills underneath it!
             .overlay(
                 Capsule()
-                    .stroke(Color.white, lineWidth: 2)
+                    .stroke(darkBackground, lineWidth: 6)
             )
             .frame(width: pillWidth, height: max(height, pillWidth), alignment: .center)
             
@@ -67,7 +66,7 @@ struct TaskBlockView: View {
             .padding(.trailing, 16)
         }
         .frame(height: max(height, pillWidth), alignment: .center)
-        .contentShape(Rectangle()) // Makes the whole row tappable
+        .contentShape(Rectangle())
         .onTapGesture(perform: onTap)
     }
 }
