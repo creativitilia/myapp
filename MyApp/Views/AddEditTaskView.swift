@@ -113,7 +113,7 @@ struct AddEditTaskView: View {
                 Spacer()
                 
                 // Icon & Title Area
-                HStack(alignment: step == 3 ? .top : .center, spacing: 16) {
+                HStack(alignment: .bottom, spacing: 16) {
                     headerIcon
                     
                     VStack(alignment: .leading, spacing: 4) {
@@ -124,47 +124,46 @@ struct AddEditTaskView: View {
                                 .foregroundColor(.white.opacity(0.8))
                         }
                         
-                        HStack(alignment: .bottom, spacing: 12) {
-                            VStack(alignment: .leading, spacing: 4) {
-                                TextField("", text: $title, prompt: Text("Task Title").foregroundColor(.white.opacity(0.5)))
-                                    .font(.title2.weight(.bold))
-                                    .foregroundColor(.white)
-                                    .tint(.white)
-                                    .onChange(of: title) { _, newValue in
-                                        if step == 1 {
-                                            if !filteredSuggestions.contains(where: { $0.title.lowercased() == newValue.lowercased() }) {
-                                                icon = "checkmark.circle.fill"
-                                            }
-                                        }
+                        TextField("", text: $title, prompt: Text("Task Title").foregroundColor(.white.opacity(0.5)))
+                            .font(.title2.weight(.bold))
+                            .foregroundColor(.white)
+                            .tint(.white)
+                            .onChange(of: title) { _, newValue in
+                                if step == 1 {
+                                    if !filteredSuggestions.contains(where: { $0.title.lowercased() == newValue.lowercased() }) {
+                                        icon = "checkmark.circle.fill"
                                     }
-                                
-                                Rectangle()
-                                    .fill(Color.white.opacity(0.5))
-                                    .frame(height: 1)
-                            }
-                            
-                            if step == 3 {
-                                Button(action: { withAnimation { isCompleted.toggle() } }) {
-                                    Circle()
-                                        .stroke(Color.white, lineWidth: 2)
-                                        .background(Circle().fill(isCompleted ? Color.white : Color.clear))
-                                        .frame(width: 28, height: 28)
-                                        .overlay(
-                                            Image(systemName: "checkmark")
-                                                .font(.caption.weight(.bold))
-                                                .foregroundColor(themeColor)
-                                                .opacity(isCompleted ? 1 : 0)
-                                        )
                                 }
-                                .padding(.bottom, 4)
                             }
-                        }
+                        
+                        Rectangle()
+                            .fill(Color.white.opacity(0.5))
+                            .frame(height: 1)
                     }
+                    // Add padding to bottom so the text field matches the bottom of the pill visually
+                    .padding(.bottom, 6)
                     
-                    if step == 2 {
+                    Spacer()
+                    
+                    if step == 3 {
+                        Button(action: { withAnimation { isCompleted.toggle() } }) {
+                            Circle()
+                                .stroke(Color.white, lineWidth: 2)
+                                .background(Circle().fill(isCompleted ? Color.white : Color.clear))
+                                .frame(width: 28, height: 28)
+                                .overlay(
+                                    Image(systemName: "checkmark")
+                                        .font(.caption.weight(.bold))
+                                        .foregroundColor(themeColor)
+                                        .opacity(isCompleted ? 1 : 0)
+                                )
+                        }
+                        .padding(.bottom, 6)
+                    } else if step == 2 {
                         Circle()
                             .stroke(Color.white, lineWidth: 2)
                             .frame(width: 24, height: 24)
+                            .padding(.bottom, 6)
                     }
                 }
                 .padding(.horizontal, 24)
@@ -226,7 +225,7 @@ struct AddEditTaskView: View {
                 colorHex = task.colorHex
                 icon = task.icon ?? "checklist"
                 isCompleted = task.isCompleted
-                notes = task.notes ?? ""
+                notes = task.notes
                 repeatFreq = task.repeatFrequency
                 step = 3 // Jump to confirmation for existing tasks
             }
@@ -261,12 +260,14 @@ extension AddEditTaskView {
             ZStack {
                 if step == 3 {
                     Capsule()
-                        .fill(Color(white: 0.25))
+                        // Fix for Pill Background in Header adapting to light/dark system mode
+                        .fill(cardBackground.opacity(0.95))
                         .frame(width: 64, height: 120)
                         .overlay(Capsule().stroke(Color.white, lineWidth: 3))
                 } else {
                     Circle()
-                        .fill(Color(white: 0.25))
+                        // Fix for Icon Background adapting to light/dark system mode
+                        .fill(cardBackground.opacity(0.95))
                         .frame(width: 64, height: 64)
                         .overlay(Circle().stroke(Color.white, lineWidth: 3))
                 }
@@ -554,7 +555,7 @@ extension AddEditTaskView {
             colorHex: colorHex,
             icon: icon,
             isCompleted: isCompleted, // Grab isCompleted directly from our state variable here
-            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : notes,
+            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "" : notes,
             repeatFrequency: repeatFreq
         )
         
