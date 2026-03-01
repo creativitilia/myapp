@@ -12,18 +12,28 @@ struct AddEditTaskView: View {
     @State private var title: String = ""
     @State private var startTime: Date = Date()
     @State private var durationMinutes: Double = 60
-    @State private var colorHex: String = "#E57373" // Default salmon pink from screenshot
+    
+    // FIX: Store the actual Color object in state instead of calculating hex constantly
+    @State private var themeColor: Color = Color(red: 0.9, green: 0.45, blue: 0.45)
     @State private var icon: String = "figure.run"
     
     // UI States
     @State private var showingColorPicker = false
-    private let presetColors = ["#E57373", "#81C784", "#64B5F6", "#4FC3F7", "#7986CB", "#BA68C8", "#F06292", "#FFB74D", "#FF8A65"]
+    
+    // Use raw Colors instead of Hex strings for the preset picker
+    private let presetColors: [Color] = [
+        Color(red: 0.9, green: 0.45, blue: 0.45), // Salmon Red
+        Color(red: 0.5, green: 0.78, blue: 0.52), // Green
+        Color(red: 0.39, green: 0.71, blue: 0.96), // Blue
+        Color(red: 0.31, green: 0.76, blue: 0.97), // Light Blue
+        Color(red: 0.47, green: 0.53, blue: 0.8),  // Indigo
+        Color(red: 0.73, green: 0.41, blue: 0.78), // Purple
+        Color(red: 0.94, green: 0.38, blue: 0.57), // Pink
+        Color(red: 1.0, green: 0.72, blue: 0.3),   // Orange
+        Color(red: 1.0, green: 0.54, blue: 0.4)    // Deep Orange
+    ]
+    
     private let durations: [Double] = [5, 15, 30, 45, 60, 90, 120, 180]
-    
-    var themeColor: Color {
-        Color(hex: colorHex) ?? Color(red: 0.9, green: 0.45, blue: 0.45)
-    }
-    
     let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.11)
 
     var body: some View {
@@ -132,7 +142,8 @@ struct AddEditTaskView: View {
                 title = task.title
                 startTime = task.startTime
                 durationMinutes = task.durationMinutes
-                colorHex = task.colorHex
+                // FIX: Initialize the color safely
+                themeColor = Color(hex: task.colorHex) ?? Color(red: 0.9, green: 0.45, blue: 0.45)
                 icon = task.icon ?? "circle.fill"
                 step = 3 // Jump to confirmation for existing tasks
             }
@@ -315,14 +326,14 @@ extension AddEditTaskView {
             if showingColorPicker {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 15) {
-                        ForEach(presetColors, id: \.self) { hex in
+                        ForEach(presetColors, id: \.self) { color in
                             Circle()
-                                .fill(Color(hex: hex) ?? .white)
+                                .fill(color)
                                 .frame(width: 36, height: 36)
-                                .overlay(Circle().stroke(Color.white, lineWidth: colorHex == hex ? 3 : 0))
+                                .overlay(Circle().stroke(Color.white, lineWidth: themeColor == color ? 3 : 0))
                                 .onTapGesture {
                                     withAnimation {
-                                        colorHex = hex
+                                        themeColor = color
                                         showingColorPicker = false
                                     }
                                 }
@@ -388,12 +399,15 @@ extension AddEditTaskView {
     
     // MARK: - Helpers
     private func saveTask() {
+        // Convert the current UI color back to a hex string for saving
+        let hexString = themeColor.toHex() ?? "#E57373"
+        
         let task = TaskItem(
             id: taskToEdit?.id ?? UUID(),
             title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Task" : title,
             startTime: startTime,
             duration: durationMinutes * 60,
-            colorHex: colorHex,
+            colorHex: hexString,
             icon: icon,
             isCompleted: taskToEdit?.isCompleted ?? false
         )
