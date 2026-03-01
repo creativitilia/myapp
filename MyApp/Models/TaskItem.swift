@@ -1,6 +1,13 @@
 import Foundation
 import SwiftUI
 
+enum RepeatFrequency: String, Codable, CaseIterable {
+    case none = "Once"
+    case daily = "Daily"
+    case weekly = "Weekly"
+    case monthly = "Monthly"
+}
+
 struct TaskItem: Identifiable, Codable, Equatable {
     var id: UUID = UUID()
     var title: String
@@ -9,6 +16,8 @@ struct TaskItem: Identifiable, Codable, Equatable {
     var colorHex: String
     var icon: String?
     var isCompleted: Bool = false
+    var notes: String? = nil
+    var repeatFrequency: RepeatFrequency = .none
 
     var durationMinutes: Double {
         duration / 60.0

@@ -11,6 +11,7 @@ struct TaskSuggestion: Identifiable {
 
 struct AddEditTaskView: View {
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.colorScheme) var colorScheme
     @ObservedObject var viewModel: DayScheduleViewModel
     var taskToEdit: TaskItem?
 
@@ -22,10 +23,11 @@ struct AddEditTaskView: View {
     @State private var startTime: Date = Date()
     @State private var durationMinutes: Double = 60
     @State private var notes: String = ""
+    @State private var repeatFreq: RepeatFrequency = .none
     
     // UI States
-    @State private var colorHex: String = "#E57373"
-    @State private var icon: String = "checklist"
+    @State private var colorHex: String = "#BA68C8" // Default to Purple like your screenshot
+    @State private var icon: String = "book.fill"
     @State private var showingColorPicker = false
     
     private let presetColors: [String] = [
@@ -34,8 +36,15 @@ struct AddEditTaskView: View {
     ]
     
     private let durations: [Double] = [5, 15, 30, 45, 60, 90, 120, 180]
-    let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.11)
-    let cardBackground = Color(red: 0.15, green: 0.15, blue: 0.16)
+    
+    // Adapts intelligently to Light/Dark mode
+    var primaryBackground: Color {
+        Color(UIColor.systemBackground)
+    }
+    
+    var cardBackground: Color {
+        Color(UIColor.secondarySystemBackground)
+    }
     
     // Dynamic property that converts the hex string to a SwiftUI Color safely
     var themeColor: Color {
@@ -108,7 +117,6 @@ struct AddEditTaskView: View {
                     
                     VStack(alignment: .leading, spacing: 4) {
                         if step > 1 {
-                            let endTime = startTime.addingTimeInterval(durationMinutes * 60)
                             Text("\(startTime.formatted(date: .omitted, time: .shortened))")
                                 .font(.caption)
                                 .foregroundColor(.white.opacity(0.8))
@@ -147,7 +155,7 @@ struct AddEditTaskView: View {
             
             // MARK: - TWO TONE BODY
             ZStack(alignment: .top) {
-                darkBackground.ignoresSafeArea()
+                primaryBackground.ignoresSafeArea()
                 
                 Group {
                     if step == 1 {
@@ -186,7 +194,7 @@ struct AddEditTaskView: View {
                 .padding(.bottom, 16)
                 .padding(.top, 16)
             }
-            .background(darkBackground)
+            .background(primaryBackground)
         }
         .onAppear {
             if let task = taskToEdit {
@@ -195,6 +203,8 @@ struct AddEditTaskView: View {
                 durationMinutes = task.durationMinutes
                 colorHex = task.colorHex
                 icon = task.icon ?? "checklist"
+                notes = task.notes ?? ""
+                repeatFreq = task.repeatFrequency
                 step = 3 // Jump to confirmation for existing tasks
             }
         }
@@ -221,7 +231,8 @@ extension AddEditTaskView {
                     path.move(to: CGPoint(x: 32, y: -50))
                     path.addLine(to: CGPoint(x: 32, y: 150))
                 }
-                .stroke(Color.black.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
+                // Dotted line adapts to light/dark
+                .stroke(Color.primary.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
             }
             
             ZStack {
@@ -246,7 +257,7 @@ extension AddEditTaskView {
             if step == 3 {
                 Button(action: { withAnimation { showingColorPicker.toggle() } }) {
                     Circle()
-                        .fill(darkBackground)
+                        .fill(primaryBackground)
                         .frame(width: 28, height: 28)
                         .overlay(
                             Image(systemName: "paintpalette.fill")
@@ -266,7 +277,7 @@ extension AddEditTaskView {
                 if filteredSuggestions.isEmpty {
                     Text("No matching suggestions. A custom task will be created.")
                         .font(.caption)
-                        .foregroundColor(.gray)
+                        .foregroundColor(.secondary)
                         .padding(.top, 40)
                 } else {
                     ForEach(filteredSuggestions) { suggestion in
@@ -289,12 +300,12 @@ extension AddEditTaskView {
             VStack(alignment: .leading, spacing: 4) {
                 Text("\(formatDuration(suggestion.durationMinutes)) default")
                     .font(.caption)
-                    .foregroundColor(.gray)
+                    .foregroundColor(.secondary)
                 Text(suggestion.title)
                     .font(.headline)
-                    .foregroundColor(.white)
+                    .foregroundColor(.primary)
                 
-                Divider().background(Color.gray.opacity(0.3)).padding(.top, 8)
+                Divider().background(Color.secondary.opacity(0.3)).padding(.top, 8)
             }
         }
         .contentShape(Rectangle())
@@ -316,21 +327,20 @@ extension AddEditTaskView {
                     .foregroundColor(themeColor)
                 DatePicker("", selection: $startTime, displayedComponents: .date)
                     .labelsHidden()
-                    .colorScheme(.dark)
                     .tint(themeColor)
                 Spacer()
             }
             .padding(.horizontal, 24)
             .padding(.top, 24)
             
-            Divider().background(Color.gray.opacity(0.3)).padding(.horizontal, 24)
+            Divider().background(Color.secondary.opacity(0.3)).padding(.horizontal, 24)
             
             // Time Picker
             VStack(alignment: .leading) {
                 HStack {
                     Text("Time")
                         .font(.title3.weight(.semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                     Spacer()
                 }
                 .padding(.horizontal, 24)
@@ -338,7 +348,6 @@ extension AddEditTaskView {
                 DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.wheel)
                     .labelsHidden()
-                    .colorScheme(.dark)
                     .frame(height: 120)
                     .clipped()
                     .frame(maxWidth: .infinity)
@@ -349,7 +358,7 @@ extension AddEditTaskView {
                 HStack {
                     Text("Duration")
                         .font(.title3.weight(.semibold))
-                        .foregroundColor(.white)
+                        .foregroundColor(.primary)
                     Spacer()
                 }
                 .padding(.horizontal, 24)
@@ -360,10 +369,10 @@ extension AddEditTaskView {
                             let isSelected = durationMinutes == dur
                             Text(formatDuration(dur))
                                 .font(.subheadline.weight(isSelected ? .bold : .regular))
-                                .foregroundColor(isSelected ? darkBackground : .gray)
+                                .foregroundColor(isSelected ? primaryBackground : .secondary)
                                 .padding(.horizontal, 20)
                                 .padding(.vertical, 10)
-                                .background(isSelected ? themeColor : Color.white.opacity(0.05))
+                                .background(isSelected ? themeColor : Color.primary.opacity(0.05))
                                 .clipShape(Capsule())
                                 .onTapGesture {
                                     withAnimation { durationMinutes = dur }
@@ -388,7 +397,7 @@ extension AddEditTaskView {
                                 Circle()
                                     .fill(Color(hex: hex) ?? .white)
                                     .frame(width: 36, height: 36)
-                                    .overlay(Circle().stroke(Color.white, lineWidth: colorHex == hex ? 3 : 0))
+                                    .overlay(Circle().stroke(Color.primary, lineWidth: colorHex == hex ? 3 : 0))
                                     .onTapGesture {
                                         withAnimation {
                                             colorHex = hex
@@ -400,11 +409,11 @@ extension AddEditTaskView {
                         .padding(.horizontal, 24)
                         .padding(.vertical, 16)
                     }
-                    .background(Color.black.opacity(0.2))
+                    .background(Color.primary.opacity(0.1))
                     .transition(.opacity)
                 }
                 
-                // Settings Block (Date, Time, Repeat, Alert)
+                // Settings Block (Date, Time, Repeat) - Removed Alert Feature
                 VStack(spacing: 0) {
                     HStack(spacing: 16) {
                         Image(systemName: "calendar")
@@ -412,14 +421,12 @@ extension AddEditTaskView {
                             .frame(width: 24)
                         DatePicker("", selection: $startTime, displayedComponents: .date)
                             .labelsHidden()
-                            .colorScheme(.dark)
                             .tint(themeColor)
                         Spacer()
-                        Image(systemName: "chevron.right").foregroundColor(.gray).font(.caption)
                     }
                     .padding()
                     
-                    Divider().background(Color.gray.opacity(0.3)).padding(.leading, 56)
+                    Divider().background(Color.secondary.opacity(0.3)).padding(.leading, 56)
                     
                     HStack(spacing: 16) {
                         Image(systemName: "clock.fill")
@@ -427,22 +434,30 @@ extension AddEditTaskView {
                             .frame(width: 24)
                         DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
                             .labelsHidden()
-                            .colorScheme(.dark)
                             .tint(themeColor)
                         Spacer()
-                        Image(systemName: "chevron.right").foregroundColor(.gray).font(.caption)
                     }
                     .padding()
                     
-                    Divider().background(Color.gray.opacity(0.3)).padding(.leading, 56)
+                    Divider().background(Color.secondary.opacity(0.3)).padding(.leading, 56)
                     
-                    detailRow(icon: "arrow.2.squarepath", title: "Every day", value: "PRO", isPro: true)
-                        .padding()
-                    
-                    Divider().background(Color.gray.opacity(0.3)).padding(.leading, 56)
-                    
-                    detailRow(icon: "bell.slash.fill", title: "1 Alert", value: "Nudge")
-                        .padding()
+                    // Functional Repeat Picker
+                    HStack(spacing: 16) {
+                        Image(systemName: "arrow.2.squarepath")
+                            .foregroundColor(themeColor)
+                            .frame(width: 24)
+                        Text("Repeat")
+                            .foregroundColor(.primary)
+                        Spacer()
+                        Picker("", selection: $repeatFreq) {
+                            ForEach(RepeatFrequency.allCases, id: \.self) { freq in
+                                Text(freq.rawValue).tag(freq)
+                            }
+                        }
+                        .tint(.secondary)
+                    }
+                    .padding(.horizontal)
+                    .padding(.vertical, 8) // Picker requires slightly different vertical padding to look flush
                 }
                 .background(cardBackground)
                 .cornerRadius(16)
@@ -452,26 +467,26 @@ extension AddEditTaskView {
                     HStack {
                         Image(systemName: "square")
                             .font(.system(size: 20))
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                         Text("Add Subtask")
-                            .foregroundColor(.gray)
+                            .foregroundColor(.secondary)
                         Spacer()
                     }
                     .padding()
                     
-                    Divider().background(Color.gray.opacity(0.3))
+                    Divider().background(Color.secondary.opacity(0.3))
                     
                     ZStack(alignment: .topLeading) {
                         if notes.isEmpty {
                             Text("Add notes, meeting links or phone numbers...")
-                                .foregroundColor(.gray.opacity(0.5))
+                                .foregroundColor(.secondary.opacity(0.5))
                                 .padding(.horizontal, 16)
                                 .padding(.top, 16)
                         }
                         TextEditor(text: $notes)
                             .scrollContentBackground(.hidden)
                             .background(Color.clear)
-                            .foregroundColor(.white)
+                            .foregroundColor(.primary)
                             .padding(.horizontal, 12)
                             .padding(.vertical, 8)
                             .frame(minHeight: 120)
@@ -506,46 +521,6 @@ extension AddEditTaskView {
         }
     }
     
-    func detailRow(icon: String, title: String, value: String, isPro: Bool = false) -> some View {
-        HStack(spacing: 16) {
-            Image(systemName: icon)
-                .foregroundColor(themeColor)
-                .frame(width: 24)
-            
-            Text(title)
-                .foregroundColor(.white)
-            
-            Spacer()
-            
-            if isPro {
-                HStack(spacing: 6) {
-                    HStack(spacing: 2) {
-                        Image(systemName: "star.fill").font(.system(size: 8))
-                        Text("PRO")
-                    }
-                    .font(.caption2.weight(.bold))
-                    .foregroundColor(.gray)
-                    .padding(.horizontal, 6)
-                    .padding(.vertical, 3)
-                    .background(Color.gray.opacity(0.3))
-                    .cornerRadius(4)
-                    
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
-                        .font(.caption)
-                }
-            } else {
-                HStack(spacing: 8) {
-                    Text(value)
-                        .foregroundColor(.gray)
-                    Image(systemName: "chevron.right")
-                        .foregroundColor(.gray)
-                        .font(.caption)
-                }
-            }
-        }
-    }
-    
     // MARK: - Helpers
     private func saveTask() {
         let task = TaskItem(
@@ -555,8 +530,9 @@ extension AddEditTaskView {
             duration: durationMinutes * 60,
             colorHex: colorHex,
             icon: icon,
-            isCompleted: taskToEdit?.isCompleted ?? false
-            // Note: If you want to persist the 'notes' string, you will need to add `notes: String?` to your `TaskItem` struct and pass it here!
+            isCompleted: taskToEdit?.isCompleted ?? false,
+            notes: notes.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? nil : notes,
+            repeatFrequency: repeatFreq
         )
         
         if taskToEdit != nil {
