@@ -16,7 +16,8 @@ struct TaskBlockView: View {
             ZStack(alignment: .center) {
                 // The main background capsule that stretches based on duration
                 Capsule()
-                    .fill(task.color.opacity(task.isCompleted ? 0.3 : 0.8))
+                    // REMOVED OPACITY: Now completely solid when not completed
+                    .fill(task.isCompleted ? task.color.opacity(0.3) : task.color)
                     .frame(width: pillWidth, height: max(height, pillWidth))
                 
                 // The icon, perfectly centered in the capsule

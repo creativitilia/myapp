@@ -71,26 +71,19 @@ struct TimelineView: View {
                                 .stroke(Color.gray.opacity(0.3), style: StrokeStyle(lineWidth: 1.5, dash: [4, 4]))
                                 .offset(x: vm.timeColumnWidth + 10 + 22 - 0.75)
                                 
-                                // C. Current Time Indicator (Red Line sweeping across)
-                                // Drawn BEFORE the task blocks so it sits behind them
+                                // C. Floating Current Time Label
+                                // Shows the exact minute (e.g. "14:36") and slides down the screen
                                 if vm.calendar.isDate(vm.selectedDate, inSameDayAs: Date()) {
                                     let currentY = vm.yPosition(for: vm.currentTime)
-                                    HStack(spacing: 0) {
-                                        Spacer()
-                                            .frame(width: vm.timeColumnWidth + 10 + 22 - 4)
-                                        
-                                        Circle()
-                                            .fill(themePink)
-                                            .frame(width: 8, height: 8)
-                                        
-                                        Rectangle()
-                                            .fill(themePink)
-                                            .frame(height: 1.5)
-                                            .padding(.leading, -2)
-                                    }
-                                    .offset(y: currentY - 4)
-                                    // Removed .zIndex(2) here so the line goes behind tasks
-                                    .animation(.linear(duration: 1.0), value: currentY)
+                                    
+                                    // Format the current time to string (e.g., "2:36 PM" or "14:36")
+                                    Text(vm.currentTime.formatted(date: .omitted, time: .shortened))
+                                        .font(.caption2.weight(.bold))
+                                        .foregroundColor(.white)
+                                        .frame(width: vm.timeColumnWidth, alignment: .trailing)
+                                        // Offset visually centers the text on the exact Y coordinate
+                                        .offset(y: currentY - 7)
+                                        .animation(.linear(duration: 1.0), value: currentY)
                                 }
                                 
                                 // D. Task Blocks
