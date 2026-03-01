@@ -1,19 +1,19 @@
 import SwiftUI
 
 struct TimeColumnView: View {
-    let pixelsPerMinute: CGFloat
+    @ObservedObject var vm: DayScheduleViewModel
     
     var body: some View {
-        VStack(alignment: .trailing, spacing: 0) {
-            ForEach(0..<25) { hour in
-                Text(String(format: "%02d:00", hour == 24 ? 0 : hour))
-                    .font(.caption)
-                    .foregroundColor(.secondary)
-                    // Height matches exactly 60 minutes * layout multiplier
-                    .frame(height: 60 * pixelsPerMinute, alignment: .top)
-                    .offset(y: -7) // visually align center of text to the hour line
+        VStack(spacing: 0) {
+            ForEach(0..<25, id: \.self) { hour in
+                Text(vm.hourLabel(for: hour == 24 ? 0 : hour))
+                    .font(.caption2.weight(.medium))
+                    .foregroundColor(Color.gray.opacity(0.6))
+                    .frame(maxWidth: .infinity, alignment: .trailing)
+                    .frame(height: 60 * vm.pixelsPerMinute, alignment: .top)
+                    .offset(y: -7) // Align visual center of text to the hour mark
             }
         }
-        .frame(width: 50)
+        .frame(width: vm.timeColumnWidth)
     }
 }

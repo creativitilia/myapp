@@ -14,6 +14,7 @@
 		758596792F5439640001F05D /* TimeColumnView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 758596702F5435BD0001F05D /* TimeColumnView.swift */; };
 		7585967A2F5439680001F05D /* DayScheduleViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7585966F2F5435B10001F05D /* DayScheduleViewModel.swift */; };
 		7585967C2F5439710001F05D /* TaskItem.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7585966D2F54359B0001F05D /* TaskItem.swift */; };
+		7585967E2F5440390001F05D /* HorizontalCalendarView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7585967D2F5440330001F05D /* HorizontalCalendarView.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
@@ -25,6 +26,7 @@
 		758596712F5435D00001F05D /* TaskBlockView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TaskBlockView.swift; sourceTree = "<group>"; };
 		758596722F5435D90001F05D /* AddEditTaskView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AddEditTaskView.swift; sourceTree = "<group>"; };
 		758596732F5435E50001F05D /* TimelineView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TimelineView.swift; sourceTree = "<group>"; };
+		7585967D2F5440330001F05D /* HorizontalCalendarView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HorizontalCalendarView.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedRootGroup section */
@@ -77,6 +79,7 @@
 		7585966A2F5435800001F05D /* ViewModels */ = {
 			isa = PBXGroup;
 			children = (
+				7585967D2F5440330001F05D /* HorizontalCalendarView.swift */,
 				7585966F2F5435B10001F05D /* DayScheduleViewModel.swift */,
 			);
 			path = ViewModels;
@@ -179,6 +182,7 @@
 				758596752F54394D0001F05D /* TimelineView.swift in Sources */,
 				7585967A2F5439680001F05D /* DayScheduleViewModel.swift in Sources */,
 				7585967C2F5439710001F05D /* TaskItem.swift in Sources */,
+				7585967E2F5440390001F05D /* HorizontalCalendarView.swift in Sources */,
 				758596782F5439600001F05D /* TaskBlockView.swift in Sources */,
 				758596772F54395B0001F05D /* AddEditTaskView.swift in Sources */,
 				758596792F5439640001F05D /* TimeColumnView.swift in Sources */,
