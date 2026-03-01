@@ -6,28 +6,31 @@ struct TaskBlockView: View {
     let onTap: () -> Void
     let onToggleComplete: () -> Void
     
-    // Minimum height for a task block to remain tappable/readable
-    let minHeight: CGFloat = 50
+    // The width of the task pill in the timeline
+    let pillWidth: CGFloat = 48
     
     var body: some View {
         HStack(alignment: .top, spacing: 16) {
             
-            // 1. Unified Capsule (The Pill)
-            ZStack {
+            // 1. The Unified Pill Shape
+            ZStack(alignment: .top) {
+                // The main background capsule that stretches based on duration
                 Capsule()
-                    .fill(task.isCompleted ? task.color.opacity(0.3) : task.color)
-                    .frame(width: 44, height: max(height, minHeight))
+                    .fill(task.color.opacity(task.isCompleted ? 0.3 : 0.8))
+                    .frame(width: pillWidth, height: max(height, pillWidth))
                 
-                // Keep the icon pinned to the top of the capsule
-                VStack {
-                    Image(systemName: task.isCompleted ? "checkmark" : (task.icon ?? "doc.text.fill"))
-                        .font(.system(size: 18, weight: .bold))
-                        .foregroundColor(.white)
-                        .frame(width: 44, height: 44) // Gives the icon a fixed square area at the top
-                    Spacer(minLength: 0)
-                }
+                // The icon, perfectly centered at the very top of the capsule
+                Image(systemName: task.isCompleted ? "checkmark" : (task.icon ?? "doc.text.fill"))
+                    .font(.system(size: 20, weight: .bold))
+                    .foregroundColor(task.isCompleted ? task.color : .white)
+                    .frame(width: pillWidth, height: pillWidth) // Keep it constrained to the top square area
             }
-            .frame(width: 44, height: max(height, minHeight))
+            // Add a white stroke around the whole pill to match the "Structured" app aesthetic
+            .overlay(
+                Capsule()
+                    .stroke(Color.white, lineWidth: 2)
+            )
+            .frame(width: pillWidth, height: max(height, pillWidth), alignment: .top)
             
             // 2. Text Content
             VStack(alignment: .leading, spacing: 4) {
@@ -45,7 +48,7 @@ struct TaskBlockView: View {
                     .foregroundColor(task.isCompleted ? .gray : .primary)
                     .strikethrough(task.isCompleted)
             }
-            .padding(.top, 12) // Push text down slightly to align with the icon
+            .padding(.top, (pillWidth - 20) / 2) // Push text down to vertically align with the icon inside the pill
             
             Spacer(minLength: 0)
             
@@ -62,11 +65,11 @@ struct TaskBlockView: View {
                             .opacity(task.isCompleted ? 1 : 0)
                     )
             }
-            .padding(.top, 12) // Align checkbox with text
+            .padding(.top, (pillWidth - 26) / 2) // Align checkbox with the top of the row
             .padding(.trailing, 16)
         }
-        .frame(height: max(height, minHeight), alignment: .top)
-        .contentShape(Rectangle())
+        .frame(height: max(height, pillWidth), alignment: .top)
+        .contentShape(Rectangle()) // Makes the whole row tappable
         .onTapGesture(perform: onTap)
     }
 }

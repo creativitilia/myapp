@@ -1,12 +1,11 @@
 import SwiftUI
 
-// Struct to hold predefined task suggestions
+// A helper struct to hold our suggestion data
 struct TaskSuggestion: Identifiable {
     let id = UUID()
     let title: String
     let icon: String
-    let colorHex: String
-    let durationMinutes: Double
+    let defaultDuration: Double // in minutes
 }
 
 struct AddEditTaskView: View {
@@ -22,62 +21,72 @@ struct AddEditTaskView: View {
     @State private var startTime: Date = Date()
     @State private var durationMinutes: Double = 60
     
-    // FIX: Store Hex directly to prevent crash when saving
-    @State private var colorHex: String = "#E57373"
-    @State private var icon: String = "checklist" // Default icon
+    @State private var themeColor: Color = Color(red: 0.9, green: 0.45, blue: 0.45)
+    @State private var icon: String = "circle.fill"
     
     // UI States
     @State private var showingColorPicker = false
     
-    private let presetColors: [String] = [
-        "#E57373", "#81C784", "#64B5F6", "#4FC3F7", "#7986CB",
-        "#BA68C8", "#F06292", "#FFB74D", "#FF8A65"
+    private let presetColors: [Color] = [
+        Color(red: 0.9, green: 0.45, blue: 0.45), Color(red: 0.5, green: 0.78, blue: 0.52),
+        Color(red: 0.39, green: 0.71, blue: 0.96), Color(red: 0.31, green: 0.76, blue: 0.97),
+        Color(red: 0.47, green: 0.53, blue: 0.8), Color(red: 0.73, green: 0.41, blue: 0.78),
+        Color(red: 0.94, green: 0.38, blue: 0.57), Color(red: 1.0, green: 0.72, blue: 0.3),
+        Color(red: 1.0, green: 0.54, blue: 0.4)
     ]
     
     private let durations: [Double] = [5, 15, 30, 45, 60, 90, 120, 180]
     let darkBackground = Color(red: 0.1, green: 0.1, blue: 0.11)
     
-    // Dynamic property that converts the hex string to a SwiftUI Color safely
-    var themeColor: Color {
-        Color(hex: colorHex) ?? Color(red: 0.9, green: 0.45, blue: 0.45)
-    }
-    
-    // Hardcoded suggestions database
-    let allSuggestions: [TaskSuggestion] = [
-        TaskSuggestion(title: "Answer Emails", icon: "envelope.fill", colorHex: "#E57373", durationMinutes: 15),
-        TaskSuggestion(title: "Watch a Movie", icon: "tv.fill", colorHex: "#64B5F6", durationMinutes: 120),
-        TaskSuggestion(title: "Go for a Run!", icon: "figure.run", colorHex: "#81C784", durationMinutes: 60),
-        TaskSuggestion(title: "Go Shopping", icon: "cart.fill", colorHex: "#FFB74D", durationMinutes: 60),
-        TaskSuggestion(title: "Read a Book", icon: "book.fill", colorHex: "#BA68C8", durationMinutes: 45),
-        TaskSuggestion(title: "Yoga Workout", icon: "figure.yoga", colorHex: "#4FC3F7", durationMinutes: 30)
+    // Hardcoded suggestions. In a real app, this might come from CoreData/SwiftData history
+    private let allSuggestions: [TaskSuggestion] = [
+        TaskSuggestion(title: "Answer Emails", icon: "envelope.fill", defaultDuration: 15),
+        TaskSuggestion(title: "Watch a Movie", icon: "tv.fill", defaultDuration: 120),
+        TaskSuggestion(title: "Go for a Run", icon: "figure.run", defaultDuration: 60),
+        TaskSuggestion(title: "Go Shopping", icon: "cart.fill", defaultDuration: 60),
+        TaskSuggestion(title: "Read a Book", icon: "book.fill", defaultDuration: 45),
+        TaskSuggestion(title: "Cook Dinner", icon: "frying.pan.fill", defaultDuration: 45),
+        TaskSuggestion(title: "Call Mom", icon: "phone.fill", defaultDuration: 30)
     ]
     
-    // Dynamically filter suggestions based on what the user types
+    // Dynamic filtering based on text field
     var filteredSuggestions: [TaskSuggestion] {
-        if title.isEmpty { return allSuggestions }
-        return allSuggestions.filter { $0.title.lowercased().contains(title.lowercased()) }
+        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+            return allSuggestions
+        } else {
+            return allSuggestions.filter { $0.title.localizedCaseInsensitiveContains(title) }
+        }
     }
 
     var body: some View {
         VStack(spacing: 0) {
             // MARK: - TWO TONE HEADER
             VStack(alignment: .leading, spacing: 0) {
-                // Top Bar (Cancel or Back)
+                // Top Bar (Back / Cancel)
                 HStack {
-                    Button(action: handleBackButton) {
-                        HStack(spacing: 4) {
-                            if step > 1 {
-                                Image(systemName: "chevron.left")
-                                    .font(.subheadline.weight(.bold))
+                    if step > 1 && taskToEdit == nil {
+                        Button(action: {
+                            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                                step -= 1
                             }
-                            Text(step > 1 ? "Back" : "Cancel")
-                                .font(.subheadline)
+                        }) {
+                            Image(systemName: "chevron.left")
+                                .font(.body.weight(.bold))
+                                .foregroundColor(.white)
+                                .padding(10)
+                                .background(Color.black.opacity(0.3))
+                                .clipShape(Circle())
                         }
-                        .foregroundColor(.white)
-                        .padding(.horizontal, 12)
-                        .padding(.vertical, 6)
-                        .background(Color.black.opacity(0.3))
-                        .clipShape(Capsule())
+                    } else {
+                        Button(action: { dismiss() }) {
+                            Text("Cancel")
+                                .font(.subheadline)
+                                .foregroundColor(.white)
+                                .padding(.horizontal, 12)
+                                .padding(.vertical, 6)
+                                .background(Color.black.opacity(0.3))
+                                .clipShape(Capsule())
+                        }
                     }
                     Spacer()
                 }
@@ -102,13 +111,13 @@ struct AddEditTaskView: View {
                             .font(.title2.weight(.bold))
                             .foregroundColor(.white)
                             .tint(.white)
-                            .onChange(of: title) { newValue in
-                                // If they type a known suggestion, automatically update the icon
-                                if let exactMatch = allSuggestions.first(where: { $0.title.lowercased() == newValue.lowercased() }) {
-                                    icon = exactMatch.icon
-                                    colorHex = exactMatch.colorHex
-                                } else {
-                                    icon = "checklist" // Default custom icon
+                            // Modern iOS 17 onChange syntax to assign a default icon if custom typing
+                            .onChange(of: title) { _, newValue in
+                                if step == 1 {
+                                    // If user is typing manually, default to a basic icon until they pick a suggestion
+                                    if !filteredSuggestions.contains(where: { $0.title.lowercased() == newValue.lowercased() }) {
+                                        icon = "checkmark.circle.fill"
+                                    }
                                 }
                             }
                         
@@ -138,13 +147,13 @@ struct AddEditTaskView: View {
                 Group {
                     if step == 1 {
                         step1Body
-                            .transition(.asymmetric(insertion: .move(edge: .leading), removal: .move(edge: .leading)))
+                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
                     } else if step == 2 {
                         step2Body
                             .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
                     } else {
                         step3Body
-                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .trailing)))
+                            .transition(.asymmetric(insertion: .move(edge: .trailing), removal: .move(edge: .leading)))
                     }
                 }
                 .animation(.spring(response: 0.4, dampingFraction: 0.8), value: step)
@@ -154,8 +163,12 @@ struct AddEditTaskView: View {
             VStack {
                 Button {
                     if step < 3 {
-                        if title.isEmpty { title = "New Task" }
-                        step += 1
+                        if title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty {
+                            title = "New Task"
+                        }
+                        withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                            step += 1
+                        }
                     } else {
                         saveTask()
                     }
@@ -179,8 +192,8 @@ struct AddEditTaskView: View {
                 title = task.title
                 startTime = task.startTime
                 durationMinutes = task.durationMinutes
-                colorHex = task.colorHex
-                icon = task.icon ?? "checklist"
+                themeColor = Color(hex: task.colorHex) ?? Color(red: 0.9, green: 0.45, blue: 0.45)
+                icon = task.icon ?? "checkmark.circle.fill"
                 step = 3 // Jump to confirmation for existing tasks
             }
         }
@@ -190,27 +203,10 @@ struct AddEditTaskView: View {
 // MARK: - Subviews & Steps
 extension AddEditTaskView {
     
-    // Go Back Logic
-    private func handleBackButton() {
-        if step > 1 {
-            withAnimation {
-                // If editing an existing task, "Back" acts as Cancel, otherwise just step backward
-                if taskToEdit != nil {
-                    dismiss()
-                } else {
-                    step -= 1
-                }
-            }
-        } else {
-            dismiss()
-        }
-    }
-    
     // HEADER ICON ANIMATION
     @ViewBuilder
     var headerIcon: some View {
         ZStack(alignment: .bottomLeading) {
-            // Dotted line in background for step 3
             if step == 3 {
                 Path { path in
                     path.move(to: CGPoint(x: 32, y: -50))
@@ -219,7 +215,6 @@ extension AddEditTaskView {
                 .stroke(Color.black.opacity(0.3), style: StrokeStyle(lineWidth: 2, dash: [4, 4]))
             }
             
-            // Main Icon Shape
             ZStack {
                 if step == 3 {
                     Capsule()
@@ -236,10 +231,9 @@ extension AddEditTaskView {
                 Image(systemName: icon)
                     .font(.title)
                     .foregroundColor(themeColor)
-                    .offset(y: step == 3 ? -15 : 0) // Shift up slightly in capsule
+                    .offset(y: step == 3 ? -15 : 0)
             }
             
-            // Color Palette Button (Step 3)
             if step == 3 {
                 Button(action: { withAnimation { showingColorPicker.toggle() } }) {
                     Circle()
@@ -261,8 +255,8 @@ extension AddEditTaskView {
         ScrollView {
             VStack(spacing: 24) {
                 if filteredSuggestions.isEmpty {
-                    Text("No matching suggestions. A custom task will be created.")
-                        .font(.caption)
+                    Text("No recent matches. Press continue to create custom task.")
+                        .font(.subheadline)
                         .foregroundColor(.gray)
                         .padding(.top, 40)
                 } else {
@@ -280,11 +274,11 @@ extension AddEditTaskView {
         HStack(spacing: 16) {
             Image(systemName: suggestion.icon)
                 .font(.title2)
-                .foregroundColor(Color(hex: suggestion.colorHex) ?? themeColor)
+                .foregroundColor(themeColor)
                 .frame(width: 30)
             
             VStack(alignment: .leading, spacing: 4) {
-                Text("\(formatDuration(suggestion.durationMinutes)) duration")
+                Text("Default: \(formatDuration(suggestion.defaultDuration))")
                     .font(.caption)
                     .foregroundColor(.gray)
                 Text(suggestion.title)
@@ -298,17 +292,16 @@ extension AddEditTaskView {
         .onTapGesture {
             self.title = suggestion.title
             self.icon = suggestion.icon
-            self.colorHex = suggestion.colorHex
-            self.durationMinutes = suggestion.durationMinutes
-            step = 2
+            self.durationMinutes = suggestion.defaultDuration
+            withAnimation(.spring(response: 0.4, dampingFraction: 0.8)) {
+                step = 2
+            }
         }
     }
     
     // STEP 2: TIME & DURATION
     var step2Body: some View {
         VStack(alignment: .leading, spacing: 30) {
-            
-            // Date Row
             HStack {
                 Image(systemName: "calendar")
                     .foregroundColor(themeColor)
@@ -324,36 +317,30 @@ extension AddEditTaskView {
             
             Divider().background(Color.gray.opacity(0.3)).padding(.horizontal, 24)
             
-            // Time Picker
             VStack(alignment: .leading) {
                 HStack {
                     Text("Time")
                         .font(.title3.weight(.semibold))
                         .foregroundColor(.white)
                     Spacer()
-                    Image(systemName: "ellipsis.circle.fill")
-                        .foregroundColor(.gray)
                 }
                 .padding(.horizontal, 24)
                 
                 DatePicker("", selection: $startTime, displayedComponents: .hourAndMinute)
                     .datePickerStyle(.wheel)
                     .labelsHidden()
-                    .colorScheme(.dark) // Force dark mode for white text
+                    .colorScheme(.dark)
                     .frame(height: 120)
                     .clipped()
                     .frame(maxWidth: .infinity)
             }
             
-            // Duration Scroller
             VStack(alignment: .leading) {
                 HStack {
                     Text("Duration")
                         .font(.title3.weight(.semibold))
                         .foregroundColor(.white)
                     Spacer()
-                    Image(systemName: "ellipsis.circle.fill")
-                        .foregroundColor(.gray)
                 }
                 .padding(.horizontal, 24)
                 
@@ -385,14 +372,14 @@ extension AddEditTaskView {
             if showingColorPicker {
                 ScrollView(.horizontal, showsIndicators: false) {
                     HStack(spacing: 15) {
-                        ForEach(presetColors, id: \.self) { hex in
+                        ForEach(presetColors, id: \.self) { color in
                             Circle()
-                                .fill(Color(hex: hex) ?? .white)
+                                .fill(color)
                                 .frame(width: 36, height: 36)
-                                .overlay(Circle().stroke(Color.white, lineWidth: colorHex == hex ? 3 : 0))
+                                .overlay(Circle().stroke(Color.white, lineWidth: themeColor == color ? 3 : 0))
                                 .onTapGesture {
                                     withAnimation {
-                                        colorHex = hex
+                                        themeColor = color
                                         showingColorPicker = false
                                     }
                                 }
@@ -458,12 +445,13 @@ extension AddEditTaskView {
     
     // MARK: - Helpers
     private func saveTask() {
+        let hexString = themeColor.toHex() ?? "#E57373"
         let task = TaskItem(
             id: taskToEdit?.id ?? UUID(),
             title: title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty ? "Untitled Task" : title,
             startTime: startTime,
             duration: durationMinutes * 60,
-            colorHex: colorHex, // Safe, guaranteed to exist
+            colorHex: hexString,
             icon: icon,
             isCompleted: taskToEdit?.isCompleted ?? false
         )
