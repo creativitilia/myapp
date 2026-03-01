@@ -2,7 +2,6 @@ import Foundation
 import SwiftUI
 import Combine
 
-@MainActor
 final class DayScheduleViewModel: ObservableObject {
     // Keep all tasks in memory, but publish the ones for the selected date
     @Published private var allTasks: [TaskItem] = []
@@ -72,6 +71,7 @@ final class DayScheduleViewModel: ObservableObject {
     }
 
     func height(for task: TaskItem) -> CGFloat {
+        // Ensure standard height of 44 for tap targets
         max(44, CGFloat(task.durationMinutes) * pixelsPerMinute)
     }
 
@@ -103,6 +103,20 @@ final class DayScheduleViewModel: ObservableObject {
         updateTask(updated)
     }
 
+    // New helper required by the drag logic inside TaskBlockView
+    func dateFromMinutesSinceMidnight(_ minutes: CGFloat) -> Date {
+        let startOfDay = calendar.startOfDay(for: selectedDate)
+        return calendar.date(byAdding: .minute, value: Int(minutes), to: startOfDay) ?? startOfDay
+    }
+
+    // New helper required by the drag logic inside TaskBlockView
+    func updateTaskStartTime(id: UUID, newStartTime: Date) {
+        if let idx = allTasks.firstIndex(where: { $0.id == id }) {
+            allTasks[idx].startTime = newStartTime
+            sortAndPersist()
+        }
+    }
+
     private func snap(minutes: Int, step: Int) -> Int {
         let remainder = minutes % step
         let down = minutes - remainder
@@ -112,6 +126,6 @@ final class DayScheduleViewModel: ObservableObject {
 
     private func sortAndPersist() {
         allTasks.sort { $0.startTime < $1.startTime }
-        store.save(allTasks)
+        store.save(tasks: allTasks) // FIXED: Added "tasks:" argument label
     }
 }

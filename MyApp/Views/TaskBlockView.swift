@@ -13,17 +13,17 @@ struct TaskBlockView: View {
                 // Duration Capsule Tail
                 if height > 44 {
                     Capsule()
-                        .fill(Color(hex: task.colorHex).opacity(0.8))
+                        .fill(task.color.opacity(0.8))
                         .frame(width: 14, height: height)
                 } else {
                     Circle()
-                        .fill(Color(hex: task.colorHex).opacity(0.8))
+                        .fill(task.color.opacity(0.8))
                         .frame(width: 44, height: 44)
                 }
                 
                 // Head Circle with Icon
                 Circle()
-                    .fill(Color(hex: task.colorHex))
+                    .fill(task.color)
                     .frame(width: 44, height: 44)
                     .overlay(
                         Image(systemName: task.icon ?? "doc.text.fill")
@@ -56,8 +56,8 @@ struct TaskBlockView: View {
             // 3. Completion Checkbox
             Button(action: onToggleComplete) {
                 Circle()
-                    .strokeBorder(task.isCompleted ? Color(hex: task.colorHex) : Color.gray.opacity(0.3), lineWidth: 2)
-                    .background(Circle().fill(task.isCompleted ? Color(hex: task.colorHex) : Color.clear))
+                    .strokeBorder(task.isCompleted ? task.color : Color.gray.opacity(0.3), lineWidth: 2)
+                    .background(Circle().fill(task.isCompleted ? task.color : Color.clear))
                     .frame(width: 26, height: 26)
                     .overlay(
                         Image(systemName: "checkmark")

@@ -117,18 +117,17 @@ struct TimelineView: View {
             .navigationBarHidden(true) // Hide default nav bar to use custom one
             .sheet(isPresented: $showingAdd) {
                 AddEditTaskView(
-                    existingTask: nil,
-                    onSave: { vm.addTask($0) },
-                    onDelete: nil
+                    viewModel: vm,
+                    taskToEdit: nil
                 )
             }
             .sheet(item: $editingTask) { task in
                 AddEditTaskView(
-                    existingTask: task,
-                    onSave: { vm.updateTask($0) },
-                    onDelete: { vm.deleteTask($0) }
+                    viewModel: vm,
+                    taskToEdit: task
                 )
+            }
             }
         }
     }
-}
+
